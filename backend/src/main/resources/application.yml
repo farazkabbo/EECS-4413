@@ -1,0 +1,45 @@
+# =====================================================================
+# Fritz EV back end - shared configuration
+# Profiles:
+#   dev      (default) in-memory H2 in PostgreSQL mode. No setup needed,
+#            schema.sql + data.sql are loaded on every start.
+#   supabase PostgreSQL on Supabase. Credentials come from environment
+#            variables (see backend/.env.example). Never commit secrets.
+# Switch with:  SPRING_PROFILES_ACTIVE=supabase ./mvnw spring-boot:run
+# =====================================================================
+spring:
+  application:
+    name: fritz-ev-backend
+  profiles:
+    default: dev
+  jpa:
+    # The schema is owned by schema.sql, Hibernate only validates it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      encoding: UTF-8
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+
+# Allowed browser origins for the React front end (comma separated)
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  hot-deals:
+    default-limit: 6
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
