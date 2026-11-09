@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Brand tokens - use them as bg-brand, text-brand, etc. */
+@theme {
+  --color-brand: #0f766e;
+  --color-brand-dark: #115e59;
+  --color-accent: #f59e0b;
+}
