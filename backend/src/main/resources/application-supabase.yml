@@ -1,0 +1,28 @@
+# Supabase (PostgreSQL). Use the "Session pooler" connection string from
+# Supabase > Project Settings > Database (IPv4-friendly, port 5432), e.g.
+#   SUPABASE_DB_URL=jdbc:postgresql://aws-0-ca-central-1.pooler.supabase.com:5432/postgres?sslmode=require
+#   SUPABASE_DB_USER=postgres.<project-ref>
+#   SUPABASE_DB_PASSWORD=<database password>
+spring:
+  datasource:
+    url: ${SUPABASE_DB_URL}
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}   # Supabase free tier has a small connection limit
+  sql:
+    init:
+      # "never" keeps cloud data between restarts. Set DB_INIT_MODE=always
+      # ONCE to drop, recreate and reseed every table.
+      mode: ${DB_INIT_MODE:never}
+
+server:
+  # Behind the cloud host's HTTPS proxy: trust X-Forwarded-* so redirects/cookies use https.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        # Front end and API live on different domains in the cloud, so the session
+        # cookie must be SameSite=None + Secure (HTTPS only).
+        same-site: none
+        secure: true
