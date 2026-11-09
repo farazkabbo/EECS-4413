@@ -16,3 +16,22 @@ bin-release/
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# ---- Fritz EV project ----
+# Java / Maven
+target/
+*.class
+# Node / Vite
+node_modules/
+dist/
+# Secrets - never commit real credentials (use .env.example as the template)
+.env
+.env.local
+*.env
+!.env.example
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
