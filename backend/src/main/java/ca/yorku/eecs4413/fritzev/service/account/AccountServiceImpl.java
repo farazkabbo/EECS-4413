@@ -10,8 +10,9 @@ import java.time.*;
 import java.util.*;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// STUB - M4 Account Manager (D1 interfaces IAuth + IAccount).
+// Handles account creation and sign-in for the customer-facing application.
 @Service
 public class AccountServiceImpl implements AccountService {
 
@@ -26,32 +27,68 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
     public UserDto register(RegisterRequest request) {
-        // TODO(Zaaid): reject duplicate username/email with ConflictException; store passwordEncoder.encode(password); save both addresses
-        throw new NotImplementedYetException("UC-01 AccountService.register is not implemented yet (owner: Zaaid, PB-19)");
+        // Roles and owner status are assigned here instead of trusting values from the browser.
+        if (userDAO.existsByUsername(request.username()) || userDAO.existsByEmail(request.email())) {
+            throw new ConflictException("Username or email is already registered");
+        }
+        User user = new User();
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setRole(Role.CUSTOMER);
+        user.setVerifiedOwner(false);
+        user = userDAO.save(user);
+        saveAddress(user, request.billing(), AddressType.BILLING);
+        saveAddress(user, request.shipping(), AddressType.SHIPPING);
+        return UserDto.from(user);
     }
 
     @Override
     public User signIn(LoginRequest request) {
-        // TODO(Zaaid): userDAO.findByUsername + passwordEncoder.matches; on failure throw UnauthorizedException("Invalid username or password") (same message for both cases)
-        throw new NotImplementedYetException("UC-02 AccountService.signIn is not implemented yet (owner: Zaaid, PB-19)");
+        // Keep the error deliberately generic so callers cannot discover which usernames exist.
+        User user = userDAO.findByUsername(request.username()).orElse(null);
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Invalid username or password");
+        }
+        return user;
     }
 
     @Override
     public UserDto getProfile(Long userId) {
-        // TODO(Zaaid): ResourceNotFoundException if missing
-        throw new NotImplementedYetException("UC-02 AccountService.getProfile is not implemented yet (owner: Zaaid, PB-19)");
+        return UserDto.from(userDAO.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found")));
     }
 
     @Override
     public AddressDto getDefaultShipping(Long userId) {
-        // TODO(Zaaid): addressDAO.findByUserIdAndType(userId, AddressType.SHIPPING)
-        throw new NotImplementedYetException("UC-14 AccountService.getDefaultShipping is not implemented yet (owner: Zaaid, PB-19)");
+        Address address = addressDAO.findByUserIdAndType(userId, AddressType.SHIPPING)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found"));
+        return toDto(address);
     }
 
     @Override
     public boolean isVerifiedOwner(Long userId) {
-        // TODO(Zaaid): read User.verifiedOwner
-        throw new NotImplementedYetException("UC-15 AccountService.isVerifiedOwner is not implemented yet (owner: Zaaid, PB-19)");
+        return userDAO.findById(userId).map(User::isVerifiedOwner).orElse(false);
+    }
+
+    private void saveAddress(User user, AddressDto dto, AddressType type) {
+        Address address = new Address();
+        address.setUser(user);
+        address.setType(type);
+        address.setStreet(dto.street());
+        address.setCity(dto.city());
+        address.setProvince(dto.province());
+        address.setCountry(dto.country() == null || dto.country().isBlank() ? "Canada" : dto.country());
+        address.setPostalCode(dto.postalCode());
+        address.setPhone(dto.phone());
+        addressDAO.save(address);
+    }
+
+    private static AddressDto toDto(Address a) {
+        return new AddressDto(a.getStreet(), a.getCity(), a.getProvince(), a.getCountry(), a.getPostalCode(), a.getPhone());
     }
 }

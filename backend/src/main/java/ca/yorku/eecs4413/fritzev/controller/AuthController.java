@@ -5,11 +5,13 @@ import ca.yorku.eecs4413.fritzev.controller.dto.RegisterRequest;
 import ca.yorku.eecs4413.fritzev.controller.dto.UserDto;
 import ca.yorku.eecs4413.fritzev.domain.User;
 import ca.yorku.eecs4413.fritzev.service.account.AccountService;
+import ca.yorku.eecs4413.fritzev.service.cart.CartService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.web.csrf.CsrfToken;
 
 // UC-01 Register, UC-02 Sign In, UC-03 Sign Out.
 @RestController
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AccountService accountService;
+    private final CartService cartService;
 
-    public AuthController(AccountService accountService) {
+    public AuthController(AccountService accountService, CartService cartService) {
         this.accountService = accountService;
+        this.cartService = cartService;
     }
 
     @PostMapping("/register")
@@ -31,7 +35,10 @@ public class AuthController {
     @PostMapping("/login")
     public UserDto login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         User user = accountService.signIn(request);
+        HttpSession anonymous = http.getSession(false);
+        String anonymousToken = anonymous == null ? null : anonymous.getId();
         SessionAuth.signIn(http, user);
+        if (anonymousToken != null) cartService.mergeAnonymousCart(user.getId(), anonymousToken);
         return UserDto.from(user);
     }
 
@@ -44,5 +51,10 @@ public class AuthController {
     @GetMapping("/me")
     public UserDto me(HttpSession session) {
         return accountService.getProfile(SessionAuth.requireUser(session));
+    }
+
+    @GetMapping("/csrf")
+    public java.util.Map<String, String> csrf(CsrfToken token) {
+        return java.util.Map.of("token", token.getToken());
     }
 }

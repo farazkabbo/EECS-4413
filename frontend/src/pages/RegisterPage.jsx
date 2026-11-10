@@ -1,6 +1,12 @@
-import ComingSoon from '../components/ui/ComingSoon.jsx'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { register } from '../api/auth.js'
+import { useAuth } from '../context/AuthContext.jsx'
 
-// UC-01 - owner: Zaaid. API helpers are ready in src/api/.
+const emptyAddress = { street:'', city:'', province:'ON', country:'Canada', postalCode:'', phone:'' }
 export default function RegisterPage() {
-  return <ComingSoon title="Create an account" useCase="UC-01" owner="Zaaid" />
+  const [form, setForm] = useState({ username:'', email:'', password:'', firstName:'', lastName:'', billing:{...emptyAddress}, shipping:{...emptyAddress} }); const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const navigate=useNavigate(); const { login }=useAuth()
+  const set = (key, value) => setForm({...form, [key]:value}); const setAddress=(type,key,value)=>setForm({...form,[type]:{...form[type],[key]:value}})
+  async function submit(e){e.preventDefault();setError('');setBusy(true);try{await register(form);await login(form.username,form.password);navigate('/cart')}catch(err){setError(err.message)}finally{setBusy(false)}}
+  return <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm"><h1 className="text-2xl font-bold">Create an account</h1>{error&&<p className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>}<form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2"><input required placeholder="Username" value={form.username} onChange={e=>set('username',e.target.value)} className="rounded border p-2"/><input required type="email" placeholder="Email" value={form.email} onChange={e=>set('email',e.target.value)} className="rounded border p-2"/><input placeholder="First name" value={form.firstName} onChange={e=>set('firstName',e.target.value)} className="rounded border p-2"/><input placeholder="Last name" value={form.lastName} onChange={e=>set('lastName',e.target.value)} className="rounded border p-2"/><input required minLength="8" type="password" placeholder="Password" value={form.password} onChange={e=>set('password',e.target.value)} className="rounded border p-2 sm:col-span-2"/>{['billing','shipping'].map(type=><fieldset key={type} className="rounded border p-3"><legend className="px-1 text-sm font-semibold capitalize">{type} address</legend>{Object.keys(emptyAddress).map(key=><input key={key} required={key!=='phone'} placeholder={key} value={form[type][key]} onChange={e=>setAddress(type,key,e.target.value)} className="mb-2 w-full rounded border p-2 text-sm"/>)}</fieldset>)}<button disabled={busy} className="rounded bg-brand py-2 font-semibold text-white disabled:opacity-50 sm:col-span-2">{busy?'Creating…':'Create account'}</button></form><p className="mt-4 text-sm text-slate-600">Already registered? <Link className="text-brand underline" to="/login">Sign in</Link></p></div>
 }

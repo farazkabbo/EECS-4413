@@ -1,5 +1,7 @@
 // Single place that talks to the Spring Boot API.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+let csrfToken = ''
+export const setCsrfToken = (token) => { csrfToken = token ?? '' }
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -16,10 +18,13 @@ export async function api(path, { method = 'GET', body, params } = {}) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v)
     })
   }
+  const csrf = document.cookie.split('; ').find((v) => v.startsWith('XSRF-TOKEN='))?.split('=').slice(1).join('=')
+  const headers = body ? { 'Content-Type': 'application/json' } : {}
+  if ((csrfToken || csrf) && method !== 'GET' && method !== 'HEAD') headers['X-XSRF-TOKEN'] = csrfToken || decodeURIComponent(csrf)
   const res = await fetch(url, {
     method,
     credentials: 'include',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   })
   const text = await res.text()

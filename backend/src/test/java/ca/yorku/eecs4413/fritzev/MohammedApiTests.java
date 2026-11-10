@@ -131,9 +131,11 @@ class MohammedApiTests {
     @DisplayName("Bad input never crashes: invalid JSON and invalid fields give 400 with field errors")
     void validation() throws Exception {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/calculators/loan")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType("application/json").content("{not json"))
                 .andExpect(status().isBadRequest());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/calculators/loan")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType("application/json").content("{\"price\":-5,\"months\":0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.price").exists())

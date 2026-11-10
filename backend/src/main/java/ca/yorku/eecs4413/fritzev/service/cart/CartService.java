@@ -26,4 +26,6 @@ public interface CartService {
 
     // UC-14
     void clearCart(Long cartId);
+
+    void mergeAnonymousCart(Long userId, String sessionToken);
 }
