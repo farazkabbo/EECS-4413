@@ -1,16 +1,16 @@
 package ca.yorku.eecs4413.fritzev.controller.dto;
 
 import jakarta.validation.constraints.*;
-import jakarta.validation.Valid;
 import java.math.BigDecimal;
-import java.time.*;
-import java.util.*;
-import ca.yorku.eecs4413.fritzev.domain.*;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
-// Body of POST /api/vehicles/{id}/savings-estimate (UC-20).
+// Body of POST /api/vehicles/{id}/savings (UC-20).
 public record SavingsRequest(
-        @NotNull @DecimalMin("1") @DecimalMax("200000") BigDecimal yearlyDistanceKm,
-        @NotNull @DecimalMin("1") @DecimalMax("50") BigDecimal gasolineLitresPer100km,
-        @NotNull @DecimalMin("0.01") @DecimalMax("10") BigDecimal gasolinePricePerLitre,
-        @NotNull @DecimalMin("0.01") @DecimalMax("5") BigDecimal electricityPricePerKwh) {
+        @JsonAlias("yearlyDistanceKm")
+        @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("200000") BigDecimal annualKm,
+        @JsonAlias("gasolineLitresPer100km")
+        @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("30") BigDecimal gasolineLPer100km,
+        @JsonAlias("gasolinePricePerLitre")
+        @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal gasolinePricePerL,
+        @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal electricityPricePerKwh) {
 }

@@ -1,56 +1,75 @@
 package ca.yorku.eecs4413.fritzev.service.configurator;
 
 import ca.yorku.eecs4413.fritzev.controller.dto.*;
-import ca.yorku.eecs4413.fritzev.dao.*;
-import ca.yorku.eecs4413.fritzev.domain.*;
-import ca.yorku.eecs4413.fritzev.exception.*;
+import ca.yorku.eecs4413.fritzev.dao.VehicleDAO;
+import ca.yorku.eecs4413.fritzev.domain.CustomizationOption;
+import ca.yorku.eecs4413.fritzev.domain.OptionCategory;
+import ca.yorku.eecs4413.fritzev.domain.Vehicle;
+import ca.yorku.eecs4413.fritzev.exception.BadRequestException;
+import ca.yorku.eecs4413.fritzev.exception.ResourceNotFoundException;
 
 import java.math.BigDecimal;
-import java.time.*;
 import java.util.*;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// STUB - M6 Vehicle Configurator (D1 interface IConfigurator).
 @Service
+@Transactional(readOnly = true)
 public class ConfiguratorServiceImpl implements ConfiguratorService {
 
     private final VehicleDAO vehicleDAO;
-    private final CustomizationOptionDAO optionDAO;
 
-    public ConfiguratorServiceImpl(VehicleDAO vehicleDAO, CustomizationOptionDAO optionDAO) {
+    public ConfiguratorServiceImpl(VehicleDAO vehicleDAO) {
         this.vehicleDAO = vehicleDAO;
-        this.optionDAO = optionDAO;
     }
 
     @Override
     public Map<OptionCategory, List<OptionDto>> getOptions(Long vehicleId) {
         Vehicle vehicle = vehicleDAO.findDetailedById(vehicleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
-        Map<OptionCategory, List<OptionDto>> result = new EnumMap<>(OptionCategory.class);
-        vehicle.getOptions().stream().sorted(Comparator.comparing(CustomizationOption::getId))
-                .forEach(o -> result.computeIfAbsent(o.getCategory(), ignored -> new ArrayList<>()).add(OptionDto.from(o)));
-        return result;
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle " + vehicleId + " not found"));
+        Map<OptionCategory, List<OptionDto>> grouped = new EnumMap<>(OptionCategory.class);
+        vehicle.getOptions().stream()
+                .sorted(Comparator.comparing(CustomizationOption::getCategory)
+                        .thenComparing(CustomizationOption::getPriceDelta)
+                        .thenComparing(CustomizationOption::getName))
+                .forEach(option -> grouped.computeIfAbsent(option.getCategory(), ignored -> new ArrayList<>())
+                        .add(OptionDto.from(option)));
+        return grouped;
     }
 
     @Override
     public ConfigurationPriceDto priceConfiguration(ConfigurationRequest request) {
-        Vehicle vehicle = vehicleDAO.findDetailedById(request.vehicleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
-        Set<Long> ids = new HashSet<>(request.optionIds());
-        if (ids.size() != request.optionIds().size()) throw new BadRequestException("Duplicate option selected");
-        Map<Long, CustomizationOption> allowed = new HashMap<>();
-        vehicle.getOptions().forEach(o -> allowed.put(o.getId(), o));
-        List<OptionDto> selected = new ArrayList<>();
-        Set<OptionCategory> categories = EnumSet.noneOf(OptionCategory.class);
-        for (Long id : request.optionIds()) {
-            CustomizationOption option = allowed.get(id);
-            if (option == null) throw new BadRequestException("Option is not available for this vehicle");
-            if (!categories.add(option.getCategory())) throw new BadRequestException("Only one option per category is allowed");
-            selected.add(OptionDto.from(option));
+        return priceConfiguration(request.vehicleId(), request.optionIds());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ConfigurationPriceDto priceConfiguration(Long vehicleId, List<Long> optionIds) {
+        Vehicle vehicle = vehicleDAO.findDetailedById(vehicleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle " + vehicleId + " not found"));
+        if (optionIds == null || new HashSet<>(optionIds).size() != optionIds.size()) {
+            throw new BadRequestException("Option ids must not contain duplicates");
         }
-        BigDecimal base = vehicle.getDealPrice() != null ? vehicle.getDealPrice() : vehicle.getPrice();
-        BigDecimal optionsTotal = selected.stream().map(OptionDto::priceDelta).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new ConfigurationPriceDto(vehicle.getId(), base, selected, optionsTotal, base.add(optionsTotal));
+
+        Map<Long, CustomizationOption> optionsById = new HashMap<>();
+        vehicle.getOptions().forEach(option -> optionsById.put(option.getId(), option));
+        List<OptionDto> selected = new ArrayList<>();
+        Set<OptionCategory> selectedCategories = EnumSet.noneOf(OptionCategory.class);
+        BigDecimal optionsTotal = BigDecimal.ZERO;
+        for (Long optionId : optionIds) {
+            CustomizationOption option = optionsById.get(optionId);
+            if (option == null) {
+                throw new BadRequestException("Option " + optionId + " does not belong to vehicle " + vehicleId);
+            }
+            if (!selectedCategories.add(option.getCategory())) {
+                throw new BadRequestException("Choose at most one option from " + option.getCategory());
+            }
+            selected.add(OptionDto.from(option));
+            optionsTotal = optionsTotal.add(option.getPriceDelta());
+        }
+        BigDecimal basePrice = vehicle.getDealPrice() == null ? vehicle.getPrice() : vehicle.getDealPrice();
+        return new ConfigurationPriceDto(vehicleId, basePrice, List.copyOf(selected), optionsTotal,
+                basePrice.add(optionsTotal));
     }
 }

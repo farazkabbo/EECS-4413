@@ -17,4 +17,6 @@ public interface ConfiguratorService {
 
     // UC-08
     ConfigurationPriceDto priceConfiguration(ConfigurationRequest request);
+
+    ConfigurationPriceDto priceConfiguration(Long vehicleId, List<Long> optionIds);
 }

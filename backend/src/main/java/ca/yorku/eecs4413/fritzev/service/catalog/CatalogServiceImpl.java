@@ -7,13 +7,14 @@ import ca.yorku.eecs4413.fritzev.dao.VehicleSpecifications;
 import ca.yorku.eecs4413.fritzev.domain.CustomizationOption;
 import ca.yorku.eecs4413.fritzev.domain.OptionCategory;
 import ca.yorku.eecs4413.fritzev.domain.Vehicle;
+import ca.yorku.eecs4413.fritzev.domain.VehicleCondition;
 import ca.yorku.eecs4413.fritzev.domain.VehicleStatus;
 import ca.yorku.eecs4413.fritzev.exception.BadRequestException;
 import ca.yorku.eecs4413.fritzev.exception.ConflictException;
-import ca.yorku.eecs4413.fritzev.exception.NotImplementedYetException;
 import ca.yorku.eecs4413.fritzev.exception.ResourceNotFoundException;
 import ca.yorku.eecs4413.fritzev.service.review.ReviewService;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,12 +39,39 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public List<VehicleSummaryDto> listVehicles(VehicleFilter filter, String sort) {
+        return listVehicles(filter, sort, null);
+    }
+
+    @Override
+    public List<VehicleSummaryDto> listVehicles(VehicleFilter filter, String sort, String direction) {
         if (filter.minPrice() != null && filter.maxPrice() != null
                 && filter.minPrice().compareTo(filter.maxPrice()) > 0) {
             throw new BadRequestException("minPrice must not be greater than maxPrice");
         }
-        return vehicleDAO.findAll(VehicleSpecifications.matching(filter), VehicleSpecifications.sortFor(sort))
+        if (filter.minYear() != null && filter.maxYear() != null && filter.minYear() > filter.maxYear()) {
+            throw new BadRequestException("minYear must not be greater than maxYear");
+        }
+        Sort ordering = direction == null ? VehicleSpecifications.sortFor(sort)
+                : VehicleSpecifications.sortFor(sort, direction);
+        List<VehicleSummaryDto> results = vehicleDAO.findAll(VehicleSpecifications.matching(filter), ordering)
                 .stream().map(VehicleSummaryDto::from).toList();
+        if (isMileageSort(sort)) {
+            Comparator<VehicleSummaryDto> byEffectiveMileage = Comparator.comparingInt(vehicle ->
+                    vehicle.condition() == VehicleCondition.NEW ? 0 : vehicle.mileageKm());
+            if (isDescendingMileageSort(sort, direction)) byEffectiveMileage = byEffectiveMileage.reversed();
+            results = results.stream().sorted(byEffectiveMileage.thenComparing(VehicleSummaryDto::id)).toList();
+        }
+        return results;
+    }
+
+    private static boolean isMileageSort(String sort) {
+        return "mileage".equalsIgnoreCase(sort) || "mileage_asc".equalsIgnoreCase(sort)
+                || "mileage_desc".equalsIgnoreCase(sort);
+    }
+
+    private static boolean isDescendingMileageSort(String sort, String direction) {
+        if (direction != null && !direction.isBlank()) return "desc".equalsIgnoreCase(direction);
+        return "mileage_desc".equalsIgnoreCase(sort);
     }
 
     @Override
@@ -68,9 +96,37 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Override
-    public List<VehicleDetailDto> compareVehicles(List<Long> vehicleIds) {
-        // TODO(Tamjeed, PB-22): validate 2..4 distinct ids, then return ids.stream().map(this::getVehicleDetails).toList()
-        throw new NotImplementedYetException("UC-07 CatalogService.compareVehicles is not implemented yet (owner: Tamjeed, PB-22)");
+    public ComparisonTableDto compareVehicles(List<Long> vehicleIds) {
+        if (vehicleIds == null || vehicleIds.size() < 2 || vehicleIds.size() > 4) {
+            throw new BadRequestException("Compare requires between 2 and 4 vehicle ids");
+        }
+        if (new HashSet<>(vehicleIds).size() != vehicleIds.size()) {
+            throw new BadRequestException("Vehicle ids must not contain duplicates");
+        }
+        Map<Long, Vehicle> found = new HashMap<>();
+        vehicleDAO.findAllById(vehicleIds).forEach(vehicle -> found.put(vehicle.getId(), vehicle));
+        if (found.size() != vehicleIds.size()) {
+            Long missingId = vehicleIds.stream().filter(id -> !found.containsKey(id)).findFirst().orElseThrow();
+            throw new ResourceNotFoundException("Vehicle " + missingId + " not found");
+        }
+        List<VehicleComparisonDto> rows = vehicleIds.stream()
+                .map(id -> VehicleComparisonDto.from(found.get(id), reviewService.getAverageRating(id)))
+                .toList();
+        return new ComparisonTableDto(rows);
+    }
+
+    @Override
+    public List<String> getBrands() {
+        return vehicleDAO.findAll(VehicleSpecifications.matching(new VehicleFilter(null, null, null, null,
+                        null, null, null, null, null)), Sort.by("brand"))
+                .stream().map(Vehicle::getBrand).distinct().toList();
+    }
+
+    @Override
+    public List<ca.yorku.eecs4413.fritzev.domain.Shape> getShapes() {
+        return vehicleDAO.findAll(VehicleSpecifications.matching(new VehicleFilter(null, null, null, null,
+                        null, null, null, null, null)), Sort.by("shape"))
+                .stream().map(Vehicle::getShape).distinct().toList();
     }
 
     @Override

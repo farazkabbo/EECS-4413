@@ -27,6 +27,8 @@ npm run dev
 
 The back end starts an in-memory database and loads `schema.sql` and `data.sql` on every start, so each run begins with fresh demo data.
 
+* D2 plain-HTML catalogue and calculator pages: http://localhost:8080/catalog
+* The supplementary `backend/src/main/resources/catalog-seed.sql` is a merge fragment for Mohammed; it is not loaded automatically. The existing `data.sql` already seeds 14 vehicles and their options for local development.
 * Basic D2 pages (plain HTML): http://localhost:8080/
 * H2 console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:fritzev`, user `sa`, no password)
 * Health check: http://localhost:8080/actuator/health
@@ -107,13 +109,13 @@ render.yaml            one-click cloud deployment (Render Blueprint)
 
 | Method | Path | UC | Status |
 |---|---|---|---|
-| GET | `/api/vehicles?brand&shape&condition&year&minPrice&maxPrice&accidentFree&sort` | 04, 05 | done |
+| GET | `/api/vehicles?brand&shape&category&minYear&maxYear&noAccidents&sort&dir` | 04, 05 | done |
 | GET | `/api/vehicles/{id}` | 06 | done |
 | GET | `/api/vehicles/hot-deals?limit` | hot deals | done |
-| GET | `/api/vehicles/compare?ids=1,2` | 07 | stub |
-| GET | `/api/vehicles/{id}/options`, POST `/api/configurations/price` | 08 | stub |
-| POST | `/api/calculators/loan` | 09 | stub (validation done) |
-| POST | `/api/vehicles/{id}/savings-estimate` | 20 | stub (validation done) |
+| GET | `/api/vehicles/compare?ids=1,2`, `/brands`, `/shapes` | 07,  filter UI | done |
+| GET | `/api/vehicles/{id}/options`, POST `/api/vehicles/{id}/configuration` | 08 | done |
+| POST | `/api/calculators/loan` | 09 | done |
+| POST | `/api/vehicles/{id}/savings` | 20 | done |
 | POST | `/api/recommendations` | 10 | stub (D3) |
 | GET | `/api/vehicles/{id}/test-drive-slots?type&date`, POST/DELETE `/api/test-drives` | 11 | stub |
 | GET / POST / PATCH / DELETE | `/api/cart`, `/api/cart/items/{itemId}` | 12, 13 | implemented |

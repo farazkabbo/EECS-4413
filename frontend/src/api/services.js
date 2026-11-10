@@ -3,7 +3,7 @@ import { api } from './client.js'
 // Calculators (M9) - UC-09, UC-20
 export const loanQuote = (data) => api('/api/calculators/loan', { method: 'POST', body: data })
 export const savingsEstimate = (vehicleId, data) =>
-  api(`/api/vehicles/${vehicleId}/savings-estimate`, { method: 'POST', body: data })
+  api(`/api/vehicles/${vehicleId}/savings`, { method: 'POST', body: data })
 
 // Recommendations (M10) - UC-10
 export const recommend = (profile, max = 5) => api('/api/recommendations', { method: 'POST', body: profile, params: { max } })

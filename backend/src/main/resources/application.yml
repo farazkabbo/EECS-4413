@@ -38,6 +38,9 @@ app:
   hot-deals:
     default-limit: 6
 
+fritzev:
+  grid-co2-kg-per-kwh: ${GRID_CO2_KG_PER_KWH:0.03}
+
 management:
   endpoints:
     web:

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fritz EV - Catalogue</title></head>
+<body>
+<p><a href="/">Home</a></p>
+<h1>Available electric vehicles</h1>
+<form action="/catalog" method="get">
+  <label>Brand
+    <select name="brand">
+      <option value="">All brands</option>
+      <option th:each="brand : ${brands}" th:value="${brand}" th:text="${brand}"
+              th:selected="${brand == selectedBrand}"></option>
+    </select>
+  </label>
+  <label>Shape
+    <select name="shape">
+      <option value="">All shapes</option>
+      <option th:each="shape : ${shapes}" th:value="${shape}" th:text="${shape}"
+              th:selected="${shape.toString() == selectedShape}"></option>
+    </select>
+  </label>
+  <label>Category
+    <select name="category">
+      <option value="">New and used</option>
+      <option value="NEW" th:selected="${selectedCategory == 'NEW'}">New</option>
+      <option value="USED" th:selected="${selectedCategory == 'USED'}">Used</option>
+    </select>
+  </label>
+  <label>Year from <input type="number" name="minYear" min="2000" max="2100" th:value="${minYear}"></label>
+  <label>to <input type="number" name="maxYear" min="2000" max="2100" th:value="${maxYear}"></label>
+  <label>No accidents <input type="checkbox" name="noAccidents" value="true"
+                             th:checked="${noAccidents == true}"></label>
+  <label>Sort
+    <select name="sort">
+      <option value="">Featured</option>
+      <option value="price" th:selected="${sort == 'price'}">Price</option>
+      <option value="mileage" th:selected="${sort == 'mileage'}">Mileage</option>
+    </select>
+  </label>
+  <label>Direction
+    <select name="dir">
+      <option value="asc" th:selected="${dir == null || dir == 'asc'}">Ascending</option>
+      <option value="desc" th:selected="${dir == 'desc'}">Descending</option>
+    </select>
+  </label>
+  <button type="submit">Filter</button>
+</form>
+<p th:if="${#lists.isEmpty(vehicles)}">No vehicles match these filters.</p>
+<form action="/compare" method="get">
+  <table border="1">
+    <thead><tr><th>Compare</th><th>Vehicle</th><th>Condition</th><th>Year</th><th>Shape</th><th>Price</th><th>Mileage</th><th>Range</th></tr></thead>
+    <tbody>
+    <tr th:each="vehicle : ${vehicles}">
+      <td><input type="checkbox" name="ids" th:value="${vehicle.id}" aria-label="Select vehicle to compare"></td>
+      <td><a th:href="@{/vehicles/{id}(id=${vehicle.id})}"
+             th:text="|${vehicle.modelYear} ${vehicle.brand} ${vehicle.model} ${vehicle.trimName ?: ''}|">Vehicle</a></td>
+      <td th:text="${vehicle.condition}"></td>
+      <td th:text="${vehicle.modelYear}"></td>
+      <td th:text="${vehicle.shape}"></td>
+      <td th:text="${vehicle.dealPrice != null ? vehicle.dealPrice : vehicle.price}"></td>
+      <td th:text="${vehicle.mileageKm}"></td>
+      <td th:text="${vehicle.rangeKm}"></td>
+    </tr>
+    </tbody>
+  </table>
+  <button type="submit">Compare selected (choose 2-4)</button>
+</form>
+</body>
+</html>

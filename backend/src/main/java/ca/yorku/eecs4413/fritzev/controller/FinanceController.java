@@ -29,4 +29,10 @@ public class FinanceController {
     public SavingsReportDto savings(@PathVariable @Positive Long id, @Valid @RequestBody SavingsRequest request) {
         return financeService.estimateSavings(id, request);
     }
+
+    @PostMapping("/vehicles/{id}/savings")
+    public SavingsReportDto savingsEstimate(@PathVariable @Positive Long id,
+                                            @Valid @RequestBody SavingsRequest request) {
+        return financeService.estimateSavings(id, request);
+    }
 }

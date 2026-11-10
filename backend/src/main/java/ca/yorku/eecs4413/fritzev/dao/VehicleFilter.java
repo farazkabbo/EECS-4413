@@ -11,6 +11,8 @@ public record VehicleFilter(
         Shape shape,
         VehicleCondition condition,
         Integer modelYear,
+        Integer minYear,
+        Integer maxYear,
         BigDecimal minPrice,
         BigDecimal maxPrice,
         Boolean accidentFree) {

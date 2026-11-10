@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout.jsx'
 import HomePage from './pages/HomePage.jsx'
 import CatalogPage from './pages/CatalogPage.jsx'
 import VehicleDetailPage from './pages/VehicleDetailPage.jsx'
+import ConfiguratorPage from './pages/ConfiguratorPage.jsx'
 import HotDealsPage from './pages/HotDealsPage.jsx'
 import ComparePage from './pages/ComparePage.jsx'
 import CalculatorsPage from './pages/CalculatorsPage.jsx'
@@ -23,6 +24,9 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="vehicles" element={<CatalogPage />} />
         <Route path="vehicles/:id" element={<VehicleDetailPage />} />
+        <Route path="vehicles/:id/configure" element={<ConfiguratorPage />} />
+        <Route path="vehicles/:id/loan" element={<CalculatorsPage />} />
+        <Route path="vehicles/:id/savings" element={<CalculatorsPage />} />
         <Route path="vehicles/:id/test-drive" element={<TestDrivePage />} />
         <Route path="hot-deals" element={<HotDealsPage />} />
         <Route path="compare" element={<ComparePage />} />

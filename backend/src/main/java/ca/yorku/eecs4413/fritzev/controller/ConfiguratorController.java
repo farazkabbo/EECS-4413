@@ -3,6 +3,7 @@ package ca.yorku.eecs4413.fritzev.controller;
 import ca.yorku.eecs4413.fritzev.controller.dto.ConfigurationPriceDto;
 import ca.yorku.eecs4413.fritzev.controller.dto.ConfigurationRequest;
 import ca.yorku.eecs4413.fritzev.controller.dto.OptionDto;
+import ca.yorku.eecs4413.fritzev.controller.dto.VehicleConfigurationRequest;
 import ca.yorku.eecs4413.fritzev.domain.OptionCategory;
 import ca.yorku.eecs4413.fritzev.service.configurator.ConfiguratorService;
 import jakarta.validation.Valid;
@@ -31,5 +32,11 @@ public class ConfiguratorController {
     @PostMapping("/configurations/price")
     public ConfigurationPriceDto price(@Valid @RequestBody ConfigurationRequest request) {
         return configuratorService.priceConfiguration(request);
+    }
+
+    @PostMapping("/vehicles/{id}/configuration")
+    public ConfigurationPriceDto configuration(@PathVariable @Positive Long id,
+                                               @Valid @RequestBody VehicleConfigurationRequest request) {
+        return configuratorService.priceConfiguration(id, request.optionIds());
     }
 }

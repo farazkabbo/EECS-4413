@@ -1,6 +1,7 @@
 package ca.yorku.eecs4413.fritzev.controller;
 
 import ca.yorku.eecs4413.fritzev.controller.dto.HotDealDto;
+import ca.yorku.eecs4413.fritzev.controller.dto.ComparisonTableDto;
 import ca.yorku.eecs4413.fritzev.controller.dto.VehicleDetailDto;
 import ca.yorku.eecs4413.fritzev.controller.dto.VehicleSummaryDto;
 import ca.yorku.eecs4413.fritzev.dao.VehicleFilter;
@@ -31,13 +32,29 @@ public class CatalogController {
                     message = "may only contain letters, digits, spaces, dots and dashes") String brand,
             @RequestParam(required = false) Shape shape,
             @RequestParam(required = false) VehicleCondition condition,
+            @RequestParam(required = false) VehicleCondition category,
             @RequestParam(required = false) @Min(2000) @Max(2100) Integer year,
+            @RequestParam(required = false) @Min(2000) @Max(2100) Integer minYear,
+            @RequestParam(required = false) @Min(2000) @Max(2100) Integer maxYear,
             @RequestParam(required = false) @DecimalMin("0") BigDecimal minPrice,
             @RequestParam(required = false) @DecimalMin("0") BigDecimal maxPrice,
             @RequestParam(required = false) Boolean accidentFree,
-            @RequestParam(required = false) @Size(max = 20) String sort) {
+            @RequestParam(required = false) Boolean noAccidents,
+            @RequestParam(required = false) @Size(max = 20) String sort,
+            @RequestParam(required = false) @Size(max = 10) String dir) {
         return catalogService.listVehicles(
-                new VehicleFilter(brand, shape, condition, year, minPrice, maxPrice, accidentFree), sort);
+                new VehicleFilter(brand, shape, category == null ? condition : category, year, minYear, maxYear, minPrice, maxPrice,
+                        noAccidents == null ? accidentFree : noAccidents), sort, dir);
+    }
+
+    @GetMapping("/brands")
+    public List<String> brands() {
+        return catalogService.getBrands();
+    }
+
+    @GetMapping("/shapes")
+    public List<Shape> shapes() {
+        return catalogService.getShapes();
     }
 
     // Hot deals
@@ -48,7 +65,7 @@ public class CatalogController {
 
     // UC-07 (Tamjeed)
     @GetMapping("/compare")
-    public List<VehicleDetailDto> compare(@RequestParam @Size(min = 2, max = 4) List<@NotNull @Positive Long> ids) {
+    public ComparisonTableDto compare(@RequestParam @Size(min = 2, max = 4) List<@NotNull @Positive Long> ids) {
         return catalogService.compareVehicles(ids);
     }
 

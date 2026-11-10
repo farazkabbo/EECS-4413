@@ -82,7 +82,17 @@ export default function VehicleDetailPage() {
             Book a test drive
           </Link>
         </div>
-        {/* TODO(Tamjeed): loan calculator (UC-09) and savings estimator (UC-20) widgets */}
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link to={`/vehicles/${v.id}/configure`} className="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-medium hover:bg-slate-50">
+            Customize
+          </Link>
+          <Link to={`/vehicles/${v.id}/loan`} className="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-medium hover:bg-slate-50">
+            Loan calculator
+          </Link>
+          <Link to={`/vehicles/${v.id}/savings`} className="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-medium hover:bg-slate-50 sm:col-span-2">
+            Fuel savings &amp; CO₂ estimator
+          </Link>
+        </div>
       </aside>
     </div>
   )
