@@ -9,10 +9,11 @@ export function AuthProvider({ children }) {
 
   // Restore the session on page load (401 simply means "not signed in").
   useEffect(() => {
-    authApi.me().then(setUser).catch(() => setUser(null))
+    authApi.csrf().catch(() => {}).finally(() => authApi.me().then(setUser).catch(() => setUser(null)))
   }, [])
 
   const login = useCallback(async (username, password) => {
+    await authApi.csrf()
     const u = await authApi.login(username, password)
     setUser(u)
     return u

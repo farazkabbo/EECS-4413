@@ -5,7 +5,7 @@ Team: Tamjeed, Zaaid, Mohammed, Ronak.
 
 | Layer | Tech |
 |---|---|
-| Back end | Java 17, Spring Boot 4.1 (Spring Web MVC, Spring Data JPA, Bean Validation), Maven wrapper |
+| Back end | Java 21, Spring Boot 4.1 (Spring Web MVC, Spring Data JPA, Spring Security, Bean Validation), Maven wrapper |
 | Database | Supabase (PostgreSQL) in the cloud, H2 in-memory (PostgreSQL mode) locally, no setup needed |
 | Front end | React 19 + Vite + Tailwind CSS 4 (`frontend/`). D2's no-CSS pages are in `backend/src/main/resources/static/` |
 | Deployment | Docker + Render (API and static site), Supabase for the database. See [docs/deployment.md](docs/deployment.md) |
@@ -92,7 +92,7 @@ render.yaml            one-click cloud deployment (Render Blueprint)
 6. Schema changes go in `schema.sql` **and** the entity (Hibernate checks they match on start-up). Seed data goes in `data.sql`.
 7. Add your curl checks to `tests/curl/api-tests.sh` and JUnit tests to `backend/src/test/java`.
 8. Work on a branch (`feature/<name>-<thing>`) and open a PR. Run `./mvnw test` before you push.
-9. If AI wrote any code, log it in [docs/ai-usage-log.md](docs/ai-usage-log.md). The limit is 30% of the code.
+9. If AI wrote any code, log it in [docs/ai-usage-log.md](docs/ai-usage-log.md). The repository records the written 30% course rule and the separate instructor exception reported by the student, pending authentic evidence.
 
 ## Who owns what (D2)
 
@@ -116,10 +116,10 @@ render.yaml            one-click cloud deployment (Render Blueprint)
 | POST | `/api/vehicles/{id}/savings-estimate` | 20 | stub (validation done) |
 | POST | `/api/recommendations` | 10 | stub (D3) |
 | GET | `/api/vehicles/{id}/test-drive-slots?type&date`, POST/DELETE `/api/test-drives` | 11 | stub |
-| GET / POST / PATCH / DELETE | `/api/cart`, `/api/cart/items/{itemId}` | 12, 13 | stub |
-| POST | `/api/checkout/start`, PUT `/{id}/shipping`, POST `/{id}/place-order` | 14 | stub (login guard done) |
-| GET / POST | `/api/vehicles/{id}/reviews` | 15 | GET done, POST stub |
-| POST | `/api/auth/register`, `/login`, `/logout`, GET `/api/auth/me` | 01-03 | stub (session handling done) |
+| GET / POST / PATCH / DELETE | `/api/cart`, `/api/cart/items/{itemId}` | 12, 13 | implemented |
+| POST | `/api/checkout/start`, PUT `/{id}/shipping`, POST `/{id}/place-order` | 14 | implemented |
+| GET / POST | `/api/vehicles/{id}/reviews` | 15 | implemented |
+| POST | `/api/auth/register`, `/login`, `/logout`, GET `/api/auth/me`, GET `/api/auth/csrf` | 01-03 | implemented |
 | POST | `/api/chat` | 16 | stub (D3) |
 | POST | `/api/events` | 18 | stub |
 | GET | `/api/admin/reports/sales`, `/usage`, `/api/admin/dashboard` | 17-19 | stub (admin guard done) |

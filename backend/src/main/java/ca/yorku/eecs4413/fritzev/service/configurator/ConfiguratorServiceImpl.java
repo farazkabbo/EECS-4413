@@ -25,13 +25,32 @@ public class ConfiguratorServiceImpl implements ConfiguratorService {
 
     @Override
     public Map<OptionCategory, List<OptionDto>> getOptions(Long vehicleId) {
-        // TODO(Tamjeed): vehicleDAO.findDetailedById(...).getOptions()
-        throw new NotImplementedYetException("UC-08 ConfiguratorService.getOptions is not implemented yet (owner: Tamjeed, PB-22)");
+        Vehicle vehicle = vehicleDAO.findDetailedById(vehicleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+        Map<OptionCategory, List<OptionDto>> result = new EnumMap<>(OptionCategory.class);
+        vehicle.getOptions().stream().sorted(Comparator.comparing(CustomizationOption::getId))
+                .forEach(o -> result.computeIfAbsent(o.getCategory(), ignored -> new ArrayList<>()).add(OptionDto.from(o)));
+        return result;
     }
 
     @Override
     public ConfigurationPriceDto priceConfiguration(ConfigurationRequest request) {
-        // TODO(Tamjeed): every option must belong to the vehicle and at most one per category; base = dealPrice if set, else price
-        throw new NotImplementedYetException("UC-08 ConfiguratorService.priceConfiguration is not implemented yet (owner: Tamjeed, PB-22)");
+        Vehicle vehicle = vehicleDAO.findDetailedById(request.vehicleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+        Set<Long> ids = new HashSet<>(request.optionIds());
+        if (ids.size() != request.optionIds().size()) throw new BadRequestException("Duplicate option selected");
+        Map<Long, CustomizationOption> allowed = new HashMap<>();
+        vehicle.getOptions().forEach(o -> allowed.put(o.getId(), o));
+        List<OptionDto> selected = new ArrayList<>();
+        Set<OptionCategory> categories = EnumSet.noneOf(OptionCategory.class);
+        for (Long id : request.optionIds()) {
+            CustomizationOption option = allowed.get(id);
+            if (option == null) throw new BadRequestException("Option is not available for this vehicle");
+            if (!categories.add(option.getCategory())) throw new BadRequestException("Only one option per category is allowed");
+            selected.add(OptionDto.from(option));
+        }
+        BigDecimal base = vehicle.getDealPrice() != null ? vehicle.getDealPrice() : vehicle.getPrice();
+        BigDecimal optionsTotal = selected.stream().map(OptionDto::priceDelta).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ConfigurationPriceDto(vehicle.getId(), base, selected, optionsTotal, base.add(optionsTotal));
     }
 }

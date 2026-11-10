@@ -6,14 +6,14 @@ import ca.yorku.eecs4413.fritzev.dao.ReviewDAO;
 import ca.yorku.eecs4413.fritzev.dao.UserDAO;
 import ca.yorku.eecs4413.fritzev.dao.VehicleDAO;
 import ca.yorku.eecs4413.fritzev.domain.Review;
-import ca.yorku.eecs4413.fritzev.exception.NotImplementedYetException;
+import ca.yorku.eecs4413.fritzev.exception.*;
 import ca.yorku.eecs4413.fritzev.service.account.AccountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// See ReviewService.
+// Only verified owners can publish a review, and each owner may review a vehicle once.
 @Service
 @Transactional(readOnly = true)
 public class ReviewServiceImpl implements ReviewService {
@@ -34,8 +34,16 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public ReviewDto submitReview(Long userId, Long vehicleId, ReviewRequest request) {
-        // TODO(Zaaid, PB-26):
-        throw new NotImplementedYetException("UC-15 ReviewService.submitReview is not implemented yet (owner: Zaaid, PB-26)");
+        // Check ownership before saving anything so an unverified account cannot create a partial review.
+        if (!accountService.isVerifiedOwner(userId)) throw new ForbiddenException("Verified EV ownership is required");
+        var vehicle = vehicleDAO.findById(vehicleId).orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+        var user = userDAO.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (reviewDAO.existsByVehicleIdAndUserId(vehicleId, userId)) throw new ConflictException("You have already reviewed this vehicle");
+        Review review = new Review();
+        review.setVehicle(vehicle); review.setUser(user); review.setRating(request.rating()); review.setWinterRangeKm(request.winterRangeKm());
+        review.setWinterRangeNotes(request.winterRangeNotes()); review.setHomeChargingNotes(request.homeChargingNotes());
+        review.setSoftwareUpdateNotes(request.softwareUpdateNotes()); review.setOverallSatisfaction(request.overallSatisfaction()); review.setComment(request.comment());
+        return toDto(reviewDAO.save(review));
     }
 
     @Override

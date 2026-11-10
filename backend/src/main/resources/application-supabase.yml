@@ -24,5 +24,7 @@ server:
       cookie:
         # Front end and API live on different domains in the cloud, so the session
         # cookie must be SameSite=None + Secure (HTTPS only).
-        same-site: none
-        secure: true
+        # For local HTTP development, override these with:
+        # SESSION_COOKIE_SAME_SITE=lax SESSION_COOKIE_SECURE=false
+        same-site: ${SESSION_COOKIE_SAME_SITE:none}
+        secure: ${SESSION_COOKIE_SECURE:true}

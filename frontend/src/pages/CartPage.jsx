@@ -1,6 +1,5 @@
-import ComingSoon from '../components/ui/ComingSoon.jsx'
-
-// UC-12 / UC-13 - owner: Zaaid. API helpers are ready in src/api/.
-export default function CartPage() {
-  return <ComingSoon title="Your cart" useCase="UC-12 / UC-13" owner="Zaaid" />
-}
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getCart, updateCartItem, removeCartItem } from '../api/cart.js'
+import { formatPrice } from '../utils/format.js'
+export default function CartPage(){const [cart,setCart]=useState(null);const[error,setError]=useState('');useEffect(()=>{getCart().then(setCart).catch(e=>setError(e.message))},[]);async function update(id,q){try{setCart(await updateCartItem(id,Number(q)))}catch(e){setError(e.message)}}async function remove(id){try{setCart(await removeCartItem(id))}catch(e){setError(e.message)}}if(error&&!cart)return <p className="rounded bg-red-50 p-4 text-red-700">{error}</p>;if(!cart)return <p>Loading cart…</p>;return <div><h1 className="text-3xl font-bold">Your cart</h1>{error&&<p className="mt-3 text-red-700">{error}</p>}{cart.items.length===0?<p className="mt-6">Your cart is empty. <Link className="text-brand underline" to="/vehicles">Browse vehicles</Link></p>:<div className="mt-6 space-y-3">{cart.items.map(i=><div key={i.itemId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4"><div><h2 className="font-semibold">{i.title}</h2><p className="text-sm text-slate-500">{i.options.join(' / ')||'Standard configuration'} · {formatPrice(i.unitPrice)}</p></div><input aria-label={`Quantity for ${i.title}`} type="number" min="0" max="5" value={i.quantity} onChange={e=>update(i.itemId,e.target.value)} className="w-20 rounded border p-2"/><strong>{formatPrice(i.lineTotal)}</strong><button onClick={()=>remove(i.itemId)} className="text-sm text-red-700 underline">Remove</button></div>)}<div className="flex items-center justify-between rounded-xl bg-slate-900 p-5 text-white"><strong>Total</strong><strong>{formatPrice(cart.total)}</strong><Link to="/checkout" className="rounded bg-white px-4 py-2 font-semibold text-slate-900">Checkout</Link></div></div>}</div>}

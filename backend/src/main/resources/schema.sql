@@ -230,3 +230,10 @@ CREATE TABLE visit_events (
     created_at   TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_events_created ON visit_events(created_at);
+
+-- Deterministic mock-payment sequence, shared across application instances.
+CREATE TABLE payment_attempt_counter (
+    id       BIGINT PRIMARY KEY,
+    attempts BIGINT NOT NULL DEFAULT 0 CHECK (attempts >= 0)
+);
+INSERT INTO payment_attempt_counter (id, attempts) VALUES (1, 0);
