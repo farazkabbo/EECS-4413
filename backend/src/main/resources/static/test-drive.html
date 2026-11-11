@@ -1,0 +1,111 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>Fritz EV - Test drive</title></head><body>
+<p><a href="index.html">Home</a> | <a href="login.html">Sign in</a> | <a href="cart.html">Cart</a></p>
+<h1>Book a test drive</h1>
+<p id="who"></p>
+<p id="message"></p>
+<form id="search">
+  <label>Vehicle ID <input name="vehicleId" type="number" min="1" value="1" required></label>
+  <label>Type <select name="type"><option>AT_HOME</option><option>VIRTUAL</option></select></label>
+  <label>Date <input name="date" type="date" required></label>
+  <button>Find slots</button>
+</form>
+<p><label>Address (required for at-home drives) <input id="address" size="40"></label></p>
+<h2>Available slots</h2>
+<table border="1"><thead><tr><th>Start</th><th>Minutes</th><th></th></tr></thead><tbody id="slots"></tbody></table>
+<h2>My bookings</h2>
+<table border="1"><thead><tr><th>Booking</th><th>Vehicle</th><th>Type</th><th>Start</th><th>Address</th><th></th></tr></thead><tbody id="mine"></tbody></table>
+<script>
+const $ = id => document.getElementById(id);
+const cell = t => { const td = document.createElement('td'); td.textContent = t == null ? '' : t; return td; };
+
+async function freshCsrf() {
+  const r = await fetch('/api/auth/csrf', { credentials: 'include' });
+  return (await r.json()).token;
+}
+
+// Calls the API with the session cookie; adds a fresh CSRF token for changes.
+async function call(path, method = 'GET', body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (method !== 'GET') headers['X-XSRF-TOKEN'] = await freshCsrf();
+  const r = await fetch(path, { method, credentials: 'include', headers, body: body ? JSON.stringify(body) : undefined });
+  const text = await r.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) {}
+  if (!r.ok) {
+    if (r.status === 401) throw new Error('Please sign in first.');
+    throw new Error(data && data.message ? data.message : 'Something went wrong (error ' + r.status + ').');
+  }
+  return data;
+}
+
+async function showWho() {
+  try {
+    const u = await call('/api/auth/me');
+    $('who').textContent = 'Signed in as ' + u.username;
+    return true;
+  } catch (e) {
+    $('who').textContent = 'You are not signed in. Please use the Sign in link, then return to this page.';
+    return false;
+  }
+}
+
+async function loadMine() {
+  $('mine').innerHTML = '';
+  try {
+    const list = await call('/api/test-drives/mine');
+    list.forEach(b => {
+      const tr = document.createElement('tr');
+      tr.append(cell(b.id), cell(b.vehicleId), cell(b.driveType), cell(b.start), cell(b.address));
+      const td = document.createElement('td');
+      const btn = document.createElement('button');
+      btn.textContent = 'Cancel';
+      btn.onclick = async () => {
+        try {
+          await call('/api/test-drives/' + b.id, 'DELETE');
+          $('message').textContent = 'Booking cancelled.';
+          loadMine();
+          if ($('search').date.value) $('search').requestSubmit();
+        } catch (e) { $('message').textContent = e.message; }
+      };
+      td.append(btn); tr.append(td); $('mine').append(tr);
+    });
+  } catch (e) { /* not signed in: the status line above already says so */ }
+}
+
+$('search').onsubmit = async e => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData($('search')));
+  $('slots').innerHTML = '';
+  try {
+    const slots = await call('/api/vehicles/' + d.vehicleId + '/test-drive-slots?type=' + d.type + '&date=' + d.date);
+    if (!$('message').textContent.startsWith('Booked') && !$('message').textContent.startsWith('Booking cancelled')) {
+      $('message').textContent = slots.length ? '' : 'No free slots for that day.';
+    } else if (!slots.length) {
+      $('message').textContent += ' No more free slots for that day.';
+    }
+    slots.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.append(cell(s.start), cell(s.minutes));
+      const td = document.createElement('td');
+      const btn = document.createElement('button');
+      btn.textContent = 'Book';
+      btn.onclick = async () => {
+        try {
+          await call('/api/test-drives', 'POST', { slotId: s.id, address: $('address').value });
+          $('message').textContent = 'Booked!';
+          loadMine();
+          $('search').requestSubmit();
+        } catch (err) { $('message').textContent = err.message; }
+      };
+      td.append(btn); tr.append(td); $('slots').append(tr);
+    });
+  } catch (err) { $('message').textContent = err.message; }
+};
+
+(async () => {
+  // default the date to 2 days ahead
+  const d = new Date(); d.setDate(d.getDate() + 2);
+  $('search').date.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  if (await showWho()) loadMine();
+})();
+</script></body></html>

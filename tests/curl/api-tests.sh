@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # =====================================================================
 # Fritz EV - curl test script for the back-end REST API.
-# Owner: Ronak (PB-33). Mohammed's endpoints (catalogue, hot deals,
-# validation, admin guard) are filled in; add your own sections below.
+# Owner: Ronak (PB-33). Covers catalogue, hot deals, validation, admin
+# guard, test drives, event tracking and admin reports/dashboard.
+# Zaaid's and Tamjeed's sections are marked TODO at the bottom.
 #
 # Usage:   ./tests/curl/api-tests.sh                    (local, http://localhost:8080)
 #          BASE_URL=https://fritz-ev-api.onrender.com ./tests/curl/api-tests.sh
 # Needs:   bash + curl. Start the back end first (cd backend && ./mvnw spring-boot:run).
+#          Run against a freshly started back end: the script books and cancels slot 3.
 # =====================================================================
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 COOKIES="$(mktemp)"
 PASS=0; FAIL=0
+TOKEN=""
 
 # check <description> <expected-status> <curl args...>
 check() {
@@ -22,6 +25,18 @@ check() {
   else
     FAIL=$((FAIL+1)); echo "FAIL [$status, expected $expected] $desc"; head -c 300 /tmp/fritz_body.json; echo
   fi
+}
+
+# --- helpers for authenticated / state-changing calls (CSRF token + session cookie) ---
+csrf_token() {
+  TOKEN=$(curl -s -b "$COOKIES" -c "$COOKIES" "$BASE_URL/api/auth/csrf" | sed 's/.*"token":"\([^"]*\)".*/\1/')
+}
+login_as() {   # login_as <username> <password>
+  csrf_token
+  curl -s -o /dev/null -b "$COOKIES" -c "$COOKIES" -X POST "$BASE_URL/api/auth/login" \
+    -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+    -d "{\"username\":\"$1\",\"password\":\"$2\"}"
+  csrf_token
 }
 
 echo "== Health =="
@@ -45,19 +60,48 @@ check "DROP TABLE in sort -> 400"                           400 -G "$BASE_URL/ap
 check "catalogue still intact afterwards"                   200 "$BASE_URL/api/vehicles"
 
 echo "== Input validation =="
-check "malformed JSON -> 400"                               400 -X POST "$BASE_URL/api/calculators/loan" -H 'Content-Type: application/json' -d '{oops'
-check "invalid loan fields -> 400"                          400 -X POST "$BASE_URL/api/calculators/loan" -H 'Content-Type: application/json' -d '{"price":-1,"months":0}'
+csrf_token
+check "malformed JSON -> 400"                               400 -X POST "$BASE_URL/api/calculators/loan" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{oops'
+check "invalid loan fields -> 400"                          400 -X POST "$BASE_URL/api/calculators/loan" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"price":-1,"months":0}'
 
 echo "== Admin guard (T12) =="
 check "sales report without login -> 401"                   401 "$BASE_URL/api/admin/reports/sales?year=2026&month=10"
 check "dashboard without login -> 401"                      401 "$BASE_URL/api/admin/dashboard"
-# TODO(Ronak/Zaaid): once login works, sign in as bob (expect 403) and as admin (expect 200):
-# check "login as admin" 200 -X POST "$BASE_URL/api/auth/login" -H 'Content-Type: application/json' -d '{"username":"admin","password":"Admin123!"}'
+
+echo "== Test drives (UC-11, Ronak) =="
+TD_DATE=$(date -v+2d +%F 2>/dev/null || date -d '+2 days' +%F)
+check "free at-home slots"                                  200 "$BASE_URL/api/vehicles/1/test-drive-slots?type=AT_HOME&date=$TD_DATE"
+check "invalid drive type -> 400"                           400 "$BASE_URL/api/vehicles/1/test-drive-slots?type=BOAT&date=$TD_DATE"
+csrf_token
+check "booking while signed out -> 401"                     401 -X POST "$BASE_URL/api/test-drives" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"slotId":3}'
+login_as alice 'Password123!'
+check "at-home booking without address -> 400"              400 -X POST "$BASE_URL/api/test-drives" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"slotId":1}'
+check "unknown slot -> 404"                                 404 -X POST "$BASE_URL/api/test-drives" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"slotId":99999}'
+check "book virtual slot 3"                                 201 -X POST "$BASE_URL/api/test-drives" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"slotId":3}'
+BOOKING_ID=$(sed 's/.*"id":\([0-9]*\).*/\1/' /tmp/fritz_body.json)
+check "double booking the same slot -> 409"                 409 -X POST "$BASE_URL/api/test-drives" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"slotId":3}'
+check "my bookings"                                         200 "$BASE_URL/api/test-drives/mine"
+check "cancel my booking"                                   204 -X DELETE "$BASE_URL/api/test-drives/$BOOKING_ID" -H "X-XSRF-TOKEN: $TOKEN"
+
+echo "== Event tracking (UC-18) =="
+check "log a VIEW event"                                    202 -X POST "$BASE_URL/api/events" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"eventType":"VIEW","vehicleId":1}'
+check "event for unknown vehicle -> 404"                    404 -X POST "$BASE_URL/api/events" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"eventType":"VIEW","vehicleId":99999}'
+
+echo "== Reports as customer / admin (UC-17..19) =="
+Y=$(date +%Y); M=$(date +%-m)
+login_as bob 'Password123!'
+check "customer sales report -> 403"                        403 "$BASE_URL/api/admin/reports/sales?year=$Y&month=$M"
+check "customer dashboard -> 403"                           403 "$BASE_URL/api/admin/dashboard"
+login_as admin 'Admin123!'
+check "admin sales report"                                  200 "$BASE_URL/api/admin/reports/sales?year=$Y&month=$M"
+check "admin usage report"                                  200 "$BASE_URL/api/admin/reports/usage?from=$Y-01-01&to=$Y-12-31"
+check "usage report from > to -> 400"                       400 "$BASE_URL/api/admin/reports/usage?from=$Y-12-31&to=$Y-01-01"
+check "sales report invalid month -> 400"                   400 "$BASE_URL/api/admin/reports/sales?year=$Y&month=13"
+check "admin dashboard"                                     200 "$BASE_URL/api/admin/dashboard"
 
 # ---------------------------------------------------------------------
 # TODO(Zaaid):  register / login / logout, cart, checkout x3 (approve, approve, deny), reviews
 # TODO(Tamjeed): compare, options, configuration price, loan, savings estimate
-# TODO(Ronak):   test-drive slots / booking / double booking (409), reports as admin
 # ---------------------------------------------------------------------
 
 rm -f "$COOKIES"
