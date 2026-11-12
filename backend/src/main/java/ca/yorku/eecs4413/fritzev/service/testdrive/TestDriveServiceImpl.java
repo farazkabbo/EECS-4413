@@ -5,14 +5,17 @@ import ca.yorku.eecs4413.fritzev.dao.*;
 import ca.yorku.eecs4413.fritzev.domain.*;
 import ca.yorku.eecs4413.fritzev.exception.*;
 
-import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// STUB - M11 Test Drive Scheduler (D1 interface ITestDrive).
+// M11 Test Drive Scheduler. Double booking is blocked twice: an explicit check here,
+// and UNIQUE(slot_id) on test_drive_bookings in schema.sql as the database-level guard.
 @Service
+@Transactional(readOnly = true)
 public class TestDriveServiceImpl implements TestDriveService {
 
     private final TestDriveSlotDAO slotDAO;
@@ -27,25 +30,66 @@ public class TestDriveServiceImpl implements TestDriveService {
 
     @Override
     public List<SlotDto> getAvailableSlots(Long vehicleId, DriveType type, LocalDate date) {
-        // TODO(Ronak): slotDAO.findFreeSlots(vehicleId, type, date.atStartOfDay(), date.plusDays(1).atStartOfDay())
-        throw new NotImplementedYetException("UC-11 TestDriveService.getAvailableSlots is not implemented yet (owner: Ronak, PB-28)");
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime now = LocalDateTime.now();
+        return slotDAO.findFreeSlots(vehicleId, type, from, from.plusDays(1)).stream()
+                .filter(s -> s.getSlotStart().isAfter(now))
+                .map(s -> new SlotDto(s.getId(), s.getVehicle().getId(), s.getDriveType(),
+                        s.getSlotStart(), s.getSlotMinutes()))
+                .toList();
     }
 
     @Override
+    @Transactional
     public BookingDto book(Long userId, BookTestDriveRequest request) {
-        // TODO(Ronak): already booked -> ConflictException; AT_HOME without address -> BadRequestException; past slot -> BadRequestException
-        throw new NotImplementedYetException("UC-11 TestDriveService.book is not implemented yet (owner: Ronak, PB-28)");
+        TestDriveSlot slot = slotDAO.findById(request.slotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Slot " + request.slotId() + " not found"));
+        if (!slot.getSlotStart().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("This slot is in the past");
+        }
+        boolean atHome = slot.getDriveType() == DriveType.AT_HOME;
+        String address = request.address() == null ? "" : request.address().trim();
+        if (atHome && address.isEmpty()) {
+            throw new BadRequestException("An address is required for at-home test drives");
+        }
+        if (bookingDAO.existsBySlotId(slot.getId())) {
+            throw new ConflictException("This slot has already been booked");
+        }
+        User user = userDAO.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        TestDriveBooking booking = new TestDriveBooking();
+        booking.setSlot(slot);
+        booking.setUser(user);
+        booking.setAddress(atHome ? address : null);
+        try {
+            booking = bookingDAO.saveAndFlush(booking);   // two simultaneous requests: the DB rejects the loser
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("This slot has already been booked");
+        }
+        return toDto(booking);
     }
 
     @Override
+    @Transactional
     public void cancel(Long userId, Long bookingId) {
-        // TODO(Ronak): delete the booking row; other users -> ForbiddenException
-        throw new NotImplementedYetException("UC-11 TestDriveService.cancel is not implemented yet (owner: Ronak, PB-28)");
+        TestDriveBooking booking = bookingDAO.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking " + bookingId + " not found"));
+        if (!booking.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("This booking belongs to another user");
+        }
+        bookingDAO.delete(booking);   // frees the slot again
     }
 
     @Override
     public List<BookingDto> myBookings(Long userId) {
-        // TODO(Ronak): implement
-        throw new NotImplementedYetException("UC-11 TestDriveService.myBookings is not implemented yet (owner: Ronak, PB-28)");
+        return bookingDAO.findByUserId(userId).stream()
+                .sorted(Comparator.comparing(b -> b.getSlot().getSlotStart()))
+                .map(TestDriveServiceImpl::toDto)
+                .toList();
+    }
+
+    private static BookingDto toDto(TestDriveBooking b) {
+        TestDriveSlot s = b.getSlot();
+        return new BookingDto(b.getId(), s.getId(), s.getVehicle().getId(), s.getDriveType(),
+                s.getSlotStart(), b.getAddress(), b.getStatus());
     }
 }

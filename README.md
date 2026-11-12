@@ -44,13 +44,29 @@ Demo accounts:
 
 To run against Supabase instead of H2, see [docs/deployment.md](docs/deployment.md).
 
+
 ## Run the tests
 
+**JUnit + MockMvc** (starts an in-memory H2 database, no setup):
+
 ```bash
-cd backend && ./mvnw test                 # JUnit + MockMvc (T09, T10, T12, hot deals, validation)
-bash tests/curl/api-tests.sh              # curl script, needs the back end running
-BASE_URL=https://<deployed-api> bash tests/curl/api-tests.sh
+cd backend && ./mvnw test
 ```
+
+Test classes: `MohammedApiTests` (catalogue, SQL injection, admin guard), `TamjeedCatalogTests`
+(filters, compare, configurator, loan, savings), `ZaaidIntegrationTests` / `ZaaidServiceTests`
+(cart, checkout, reviews, accounts), `RonakApiTests` (test drives, double booking, event
+tracking, admin-only reports and dashboard).
+
+**Curl script** (needs the back end running on a freshly started server, because it books a slot):
+
+```bash
+cd backend && ./mvnw spring-boot:run        # terminal 1
+bash tests/curl/api-tests.sh                # terminal 2
+BASE_URL=https://<deployed-api> bash tests/curl/api-tests.sh   # against the cloud deployment
+```
+
+The script prints PASS/FAIL per request and exits non-zero if anything fails.
 
 ## Repository layout
 
