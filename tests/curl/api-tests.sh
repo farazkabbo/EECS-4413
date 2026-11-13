@@ -3,7 +3,7 @@
 # Fritz EV - curl test script for the back-end REST API. 
 # Owner: Ronak (PB-33). Covers catalogue, hot deals, validation, admin 
 # guard, test drives, event tracking and admin reports/dashboard. 
-# Zaaid's and Tamjeed's sections are marked TODO at the bottom. 
+# Zaaid's section remains TODO at the bottom.
 # 
 # Usage:   ./tests/curl/api-tests.sh                    (local, http://localhost:8080) 
 #          BASE_URL=https://fritz-ev-api.onrender.com ./tests/curl/api-tests.sh 
@@ -26,6 +26,16 @@ check() {
     FAIL=$((FAIL+1)); echo "FAIL [$status, expected $expected] $desc"; head -c 300 /tmp/fritz_body.json; echo 
   fi 
 } 
+
+check_body_contains() {
+  local desc="$1" expected="$2"
+  if grep -Fq -- "$expected" /tmp/fritz_body.json; then
+    PASS=$((PASS+1)); echo "PASS [body] $desc"
+  else
+    FAIL=$((FAIL+1)); echo "FAIL [body] $desc"
+    head -c 300 /tmp/fritz_body.json; echo
+  fi
+}
 
 # --- helpers for authenticated / state-changing calls (CSRF token + session cookie) --- 
 csrf_token() { 
@@ -99,12 +109,54 @@ check "usage report from > to -> 400"                       400 "$BASE_URL/api/a
 check "sales report invalid month -> 400"                   400 "$BASE_URL/api/admin/reports/sales?year=$Y&month=13" 
 check "admin dashboard"                                     200 "$BASE_URL/api/admin/dashboard" 
 
+# ---------------------------------------------------------------------
+# Catalogue and calculators (UC-07..09, UC-20; Tamjeed)
+echo "== Compare vehicles and configurator (UC-07..08) =="
+check "compare two vehicles"                                200 "$BASE_URL/api/vehicles/compare?ids=1,2"
+check_body_contains "comparison includes both vehicles"     '"vehicles"'
+check "compare fewer than two vehicles -> 400"              400 "$BASE_URL/api/vehicles/compare?ids=1"
+check "compare unknown vehicle -> 404"                      404 "$BASE_URL/api/vehicles/compare?ids=1,99999"
+check "get vehicle customization options"                   200 "$BASE_URL/api/vehicles/1/options"
+check_body_contains "options are grouped by category"       '"EXTERIOR_COLOUR"'
+csrf_token
+check "price valid configuration"                           200 -X POST "$BASE_URL/api/vehicles/1/configuration" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"optionIds":[1,6]}'
+check_body_contains "configuration response includes total" '"total":54990.00'
+check "selecting two options in one category -> 400"        400 -X POST "$BASE_URL/api/vehicles/1/configuration" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"optionIds":[1,2]}'
+check "duplicate configuration option -> 400"               400 -X POST "$BASE_URL/api/vehicles/1/configuration" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"optionIds":[1,1]}'
+check "option not offered for vehicle -> 400"                400 -X POST "$BASE_URL/api/vehicles/1/configuration" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" -d '{"optionIds":[5]}'
+
+echo "== Loan and fuel-savings calculators (UC-09, UC-20) =="
+check "zero-rate loan calculation"                          200 -X POST "$BASE_URL/api/calculators/loan" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"price":12000,"downPayment":0,"annualRatePercent":0,"months":12}'
+check_body_contains "loan quote includes monthly payment"   '"monthlyPayment":1000.00'
+check "down payment exceeds price -> 400"                   400 -X POST "$BASE_URL/api/calculators/loan" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"price":12000,"downPayment":12001,"annualRatePercent":0,"months":12}'
+check "fuel-savings and CO2 estimate"                       200 -X POST "$BASE_URL/api/vehicles/1/savings" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"annualKm":20000,"gasolineLPer100km":8,"gasolinePricePerL":1.5,"electricityPricePerKwh":0.2}'
+check_body_contains "savings response includes yearly savings" '"yearlySavings":1804.00'
+check_body_contains "savings response includes assumptions" '"assumptions"'
+check "invalid fuel consumption -> 400"                    400 -X POST "$BASE_URL/api/vehicles/1/savings" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"annualKm":20000,"gasolineLPer100km":31,"gasolinePricePerL":1.5,"electricityPricePerKwh":0.2}'
+check "savings estimate for unknown vehicle -> 404"         404 -X POST "$BASE_URL/api/vehicles/99999/savings" \
+  -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"annualKm":20000,"gasolineLPer100km":8,"gasolinePricePerL":1.5,"electricityPricePerKwh":0.2}'
+
 # --------------------------------------------------------------------- 
 # TODO(Zaaid):  register / login / logout, cart, checkout x3 (approve, approve, deny), reviews 
-# TODO(Tamjeed): compare, options, configuration price, loan, savings estimate 
 # --------------------------------------------------------------------- 
 
 rm -f "$COOKIES" 
 echo 
 echo "Passed: $PASS  Failed: $FAIL" 
-  "$FAIL" -eq 0 ]
+if [ "$FAIL" -eq 0 ]; then
+  exit 0
+fi
+exit 1
