@@ -60,22 +60,42 @@ public class FinanceServiceImpl implements FinanceService {
     } 
 
     @Override 
+    // AI-use disclosure: AI assisted with drafting this method; it was reviewed and integrated into this project.
+    // Reconstructed prompt (approximate, not the original wording): "Implement UC-20 savings estimation:
+    // compare annual gasoline and EV charging costs, estimate gasoline and EV CO2 emissions, and return
+    // yearly/five-year savings and the assumptions using the vehicle's energy consumption."
+    // This section of AI generated code was by Tamjeed Shariff
     public SavingsReportDto estimateSavings(Long vehicleId, SavingsRequest request) { 
+        // Load the EV so the estimate uses its stored energy consumption, not a value supplied by the caller.
         Vehicle vehicle = vehicleDAO.findById(vehicleId) 
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle " + vehicleId + " not found")); 
+
+        // Convert the annual distance into the number of 100-km units used by the consumption ratings.
         BigDecimal kmBlocks = request.annualKm().divide(ONE_HUNDRED, CALCULATION_SCALE, RoundingMode.HALF_UP); 
+
+        // Gasoline cost = distance units * gasoline litres per 100 km * gasoline price per litre.
         BigDecimal gasolineCost = money(kmBlocks.multiply(request.gasolineLPer100km()) 
                 .multiply(request.gasolinePricePerL())); 
+
+        // EV charging cost uses the vehicle's kWh per 100 km and the supplied electricity price.
         BigDecimal electricityCost = money(kmBlocks.multiply(vehicle.getEnergyKwhPer100km()) 
                 .multiply(request.electricityPricePerKwh())); 
+
+        // A positive result means the EV costs less to run; a negative result means it costs more.
         BigDecimal yearlySavings = money(gasolineCost.subtract(electricityCost)); 
 
-        // CO2: annual distance / 100 * fuel use * 2.31 kg/L; EV emissions use kWh/100 km * Ontario grid factor. 
+        // Estimate gasoline emissions with the project's fixed 2.31 kg CO2 per litre factor.
         BigDecimal co2GasolineKg = money(kmBlocks.multiply(request.gasolineLPer100km()) 
                 .multiply(GASOLINE_CO2_KG_PER_LITRE)); 
+
+        // Estimate EV emissions using the configurable electricity-grid emissions factor.
         BigDecimal co2ElectricKg = money(kmBlocks.multiply(vehicle.getEnergyKwhPer100km()) 
                 .multiply(gridCo2KgPerKwh)); 
+
+        // Subtract EV emissions from gasoline emissions to estimate the CO2 avoided each year.
         BigDecimal co2AvoidedKg = money(co2GasolineKg.subtract(co2ElectricKg)); 
+
+        // Include the formulas and the five-year constant-use assumption with the result for transparency.
         List<String> assumptions = List.of( 
                 "Gasoline cost = annualKm / 100 * gasolineLPer100km * gasolinePricePerL.", 
                 "Electricity cost = annualKm / 100 * vehicle energy kWh/100km * electricityPricePerKwh.", 
@@ -86,6 +106,7 @@ public class FinanceServiceImpl implements FinanceService {
                 money(yearlySavings.multiply(BigDecimal.valueOf(5))), co2GasolineKg, co2ElectricKg, 
                 co2AvoidedKg, assumptions); 
     } 
+    // End of the AI-assisted UC-20 savings-estimation method.
 
     private static BigDecimal money(BigDecimal amount) { 
         return amount.setScale(MONEY_SCALE, RoundingMode.HALF_UP); 
