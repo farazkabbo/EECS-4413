@@ -1,22 +1,22 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Compare vehicles - Fritz EV</title></head>
-<body>
-<p><a href="/catalog">Catalogue</a></p>
-<h1>Vehicle comparison</h1>
-<p th:if="${error}" th:text="${error}"></p>
-<table th:if="${comparison != null}" border="1">
-  <thead><tr><th>Attribute</th><th th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.title}"></th></tr></thead>
-  <tbody>
-  <tr><th>Price</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.price}"></td></tr>
-  <tr><th>Year</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.year}"></td></tr>
-  <tr><th>Range (km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.rangeKm}"></td></tr>
-  <tr><th>Battery (kWh)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.batteryKwh}"></td></tr>
-  <tr><th>Consumption (kWh/100 km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.energyKwhPer100km}"></td></tr>
-  <tr><th>Mileage (km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.mileageKm}"></td></tr>
-  <tr><th>Rating</th><td th:each="vehicle : ${comparison.vehicles}"
-                         th:text="${vehicle.averageRating != null ? vehicle.averageRating : 'No reviews'}"></td></tr>
-  </tbody>
-</table>
-</body>
-</html>
+<!DOCTYPE html> 
+<html lang="en" xmlns:th="http://www.thymeleaf.org"> 
+<head><meta charset="UTF-8"><title>Compare vehicles - Fritz EV</title></head> 
+<body> 
+<p><a href="/catalog">Catalogue</a></p> 
+<h1>Vehicle comparison</h1> 
+<p th:if="${error}" th:text="${error}"></p> 
+<table th:if="${comparison != null}" border="1"> 
+  <thead><tr><th>Attribute</th><th th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.title}"></th></tr></thead> 
+  <tbody> 
+  <tr><th>Price</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.price}"></td></tr> 
+  <tr><th>Year</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.year}"></td></tr> 
+  <tr><th>Range (km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.rangeKm}"></td></tr> 
+  <tr><th>Battery (kWh)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.batteryKwh}"></td></tr> 
+  <tr><th>Consumption (kWh/100 km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.energyKwhPer100km}"></td></tr> 
+  <tr><th>Mileage (km)</th><td th:each="vehicle : ${comparison.vehicles}" th:text="${vehicle.mileageKm}"></td></tr> 
+  <tr><th>Rating</th><td th:each="vehicle : ${comparison.vehicles}" 
+                         th:text="${vehicle.averageRating != null ? vehicle.averageRating : 'No reviews'}"></td></tr> 
+  </tbody> 
+</table> 
+</body> 
+</html> 

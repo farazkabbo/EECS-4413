@@ -1,50 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>Fritz EV - Admin</title></head><body>
-<p><a href="index.html">Home</a> | <a href="login.html">Sign in</a> | <a href="test-drive.html">Test drives</a></p>
-<h1>Admin reports</h1>
-<p id="who"></p>
-<p id="message"></p>
-<h2>Monthly sales</h2>
-<form id="sales"><label>Year <input name="year" type="number" min="2000" max="2100" required></label>
-<label>Month <input name="month" type="number" min="1" max="12" required></label><button>Show sales report</button></form>
-<h2>Website usage</h2>
-<form id="usage"><label>From <input name="from" type="date" required></label>
-<label>To <input name="to" type="date" required></label><button>Show usage report</button></form>
-<h2>Dashboard</h2><button id="dash">Show dashboard</button>
-<pre id="out"></pre>
-<script>
-const $ = id => document.getElementById(id);
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>Fritz EV - Admin</title></head><body> 
+<p><a href="index.html">Home</a> | <a href="login.html">Sign in</a> | <a href="test-drive.html">Test drives</a></p> 
+<h1>Admin reports</h1> 
+<p id="who"></p> 
+<p id="message"></p> 
+<h2>Monthly sales</h2> 
+<form id="sales"><label>Year <input name="year" type="number" min="2000" max="2100" required></label> 
+<label>Month <input name="month" type="number" min="1" max="12" required></label><button>Show sales report</button></form> 
+<h2>Website usage</h2> 
+<form id="usage"><label>From <input name="from" type="date" required></label> 
+<label>To <input name="to" type="date" required></label><button>Show usage report</button></form> 
+<h2>Dashboard</h2><button id="dash">Show dashboard</button> 
+<pre id="out"></pre> 
+<script> 
+const $ = id => document.getElementById(id); 
 
-async function show(url) {
-  $('message').textContent = ''; $('out').textContent = '';
-  const r = await fetch(url, { credentials: 'include' });
-  const text = await r.text();
-  if (!r.ok) {
-    let m; try { m = JSON.parse(text).message; } catch (e) {}
-    $('message').textContent = r.status === 401 ? 'Please sign in as an administrator first.'
-      : r.status === 403 ? 'Administrators only.'
-      : (m || 'Something went wrong (error ' + r.status + ').');
-    return;
-  }
-  $('out').textContent = JSON.stringify(JSON.parse(text), null, 2);
-}
+async function show(url) { 
+  $('message').textContent = ''; $('out').textContent = ''; 
+  const r = await fetch(url, { credentials: 'include' }); 
+  const text = await r.text(); 
+  if (!r.ok) { 
+    let m; try { m = JSON.parse(text).message; } catch (e) {} 
+    $('message').textContent = r.status === 401 ? 'Please sign in as an administrator first.' 
+      : r.status === 403 ? 'Administrators only.' 
+      : (m || 'Something went wrong (error ' + r.status + ').'); 
+    return; 
+  } 
+  $('out').textContent = JSON.stringify(JSON.parse(text), null, 2); 
+} 
 
-$('sales').onsubmit = e => { e.preventDefault(); const d = new FormData($('sales')); show('/api/admin/reports/sales?year=' + d.get('year') + '&month=' + d.get('month')); };
-$('usage').onsubmit = e => { e.preventDefault(); const d = new FormData($('usage')); show('/api/admin/reports/usage?from=' + d.get('from') + '&to=' + d.get('to')); };
-$('dash').onclick = () => show('/api/admin/dashboard');
+$('sales').onsubmit = e => { e.preventDefault(); const d = new FormData($('sales')); show('/api/admin/reports/sales?year=' + d.get('year') + '&month=' + d.get('month')); }; 
+$('usage').onsubmit = e => { e.preventDefault(); const d = new FormData($('usage')); show('/api/admin/reports/usage?from=' + d.get('from') + '&to=' + d.get('to')); }; 
+$('dash').onclick = () => show('/api/admin/dashboard'); 
 
-(async () => {
-  const now = new Date();
-  $('sales').year.value = now.getFullYear();
-  $('sales').month.value = now.getMonth() + 1;
-  $('usage').from.value = now.getFullYear() + '-01-01';
-  $('usage').to.value = now.getFullYear() + '-12-31';
-  try {
-    const r = await fetch('/api/auth/me', { credentials: 'include' });
-    if (!r.ok) throw new Error();
-    const u = await r.json();
-    $('who').textContent = 'Signed in as ' + u.username + (u.role === 'ADMIN' ? '' : ' (reports are for administrators only)');
-  } catch (e) {
-    $('who').textContent = 'You are not signed in. Please sign in as an administrator, then return to this page.';
-  }
-})();
-</script></body></html>
+(async () => { 
+  const now = new Date(); 
+  $('sales').year.value = now.getFullYear(); 
+  $('sales').month.value = now.getMonth() + 1; 
+  $('usage').from.value = now.getFullYear() + '-01-01'; 
+  $('usage').to.value = now.getFullYear() + '-12-31'; 
+  try { 
+    const r = await fetch('/api/auth/me', { credentials: 'include' }); 
+    if (!r.ok) throw new Error(); 
+    const u = await r.json(); 
+    $('who').textContent = 'Signed in as ' + u.username + (u.role === 'ADMIN' ? '' : ' (reports are for administrators only)'); 
+  } catch (e) { 
+    $('who').textContent = 'You are not signed in. Please sign in as an administrator, then return to this page.'; 
+  } 
+})(); 
+ /script></body></html>

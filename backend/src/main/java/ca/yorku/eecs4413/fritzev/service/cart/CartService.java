@@ -1,31 +1,31 @@
-package ca.yorku.eecs4413.fritzev.service.cart;
+package ca.yorku.eecs4413.fritzev.service.cart; 
 
-import ca.yorku.eecs4413.fritzev.controller.dto.*;
-import ca.yorku.eecs4413.fritzev.dao.*;
-import ca.yorku.eecs4413.fritzev.domain.*;
-import ca.yorku.eecs4413.fritzev.exception.*;
+import ca.yorku.eecs4413.fritzev.controller.dto.*; 
+import ca.yorku.eecs4413.fritzev.dao.*; 
+import ca.yorku.eecs4413.fritzev.domain.*; 
+import ca.yorku.eecs4413.fritzev.exception.*; 
 
-import java.math.BigDecimal;
-import java.time.*;
-import java.util.*;
+import java.math.BigDecimal; 
+import java.time.*; 
+import java.util.*; 
 
-// M7 Cart Manager (D1 interface ICart).
-public interface CartService {
+// M7 Cart Manager (D1 interface ICart). 
+public interface CartService { 
 
-    // UC-12
-    CartDto getCart(Long userId, String sessionToken);
+    // UC-12 
+    CartDto getCart(Long userId, String sessionToken); 
 
-    // UC-12
-    CartDto addItem(Long userId, String sessionToken, AddCartItemRequest request);
+    // UC-12 
+    CartDto addItem(Long userId, String sessionToken, AddCartItemRequest request); 
 
-    // UC-13
-    CartDto updateQuantity(Long userId, String sessionToken, Long itemId, int quantity);
+    // UC-13 
+    CartDto updateQuantity(Long userId, String sessionToken, Long itemId, int quantity); 
 
-    // UC-13
-    CartDto removeItem(Long userId, String sessionToken, Long itemId);
+    // UC-13 
+    CartDto removeItem(Long userId, String sessionToken, Long itemId); 
 
-    // UC-14
-    void clearCart(Long cartId);
+    // UC-14 
+    void clearCart(Long cartId); 
 
-    void mergeAnonymousCart(Long userId, String sessionToken);
-}
+    void mergeAnonymousCart(Long userId, String sessionToken); 
+} 

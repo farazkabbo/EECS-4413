@@ -1,52 +1,52 @@
-package ca.yorku.eecs4413.fritzev.domain;
+package ca.yorku.eecs4413.fritzev.domain; 
 
-import jakarta.persistence.*;
+import jakarta.persistence.*; 
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.math.BigDecimal; 
+import java.time.LocalDate; 
+import java.time.LocalDateTime; 
+import java.util.*; 
 
-// Shopping cart of a signed-in user or an anonymous session (M7).
-@Entity
-@Table(name = "carts")
-public class Cart {
+// Shopping cart of a signed-in user or an anonymous session (M7). 
+@Entity 
+@Table(name = "carts") 
+public class Cart { 
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY) 
+    private Long id; 
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @ManyToOne(fetch = FetchType.LAZY) 
+    @JoinColumn(name = "user_id") 
+    private User user; 
 
-    private String sessionToken;
+    private String sessionToken; 
 
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> items = new ArrayList<>();
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true) 
+    private List<CartItem> items = new ArrayList<>(); 
 
-    @Column(insertable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(insertable = false, updatable = false) 
+    private LocalDateTime createdAt; 
 
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now(); 
 
-    public Cart() { }
+    public Cart() { } 
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() { return id; } 
+    public void setId(Long id) { this.id = id; } 
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public User getUser() { return user; } 
+    public void setUser(User user) { this.user = user; } 
 
-    public String getSessionToken() { return sessionToken; }
-    public void setSessionToken(String sessionToken) { this.sessionToken = sessionToken; }
+    public String getSessionToken() { return sessionToken; } 
+    public void setSessionToken(String sessionToken) { this.sessionToken = sessionToken; } 
 
-    public List<CartItem> getItems() { return items; }
-    public void setItems(List<CartItem> items) { this.items = items; }
+    public List<CartItem> getItems() { return items; } 
+    public void setItems(List<CartItem> items) { this.items = items; } 
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; } 
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; } 
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-}
+    public LocalDateTime getUpdatedAt() { return updatedAt; } 
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; } 
+} 

@@ -1,29 +1,29 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Fuel savings estimator - Fritz EV</title></head>
-<body>
-<p><a th:href="@{/vehicles/{id}(id=${vehicle.id})}">Vehicle details</a></p>
-<h1 th:text="|Fuel savings and CO2 estimator: ${vehicle.brand} ${vehicle.model}|">Savings estimator</h1>
-<p th:if="${error}" th:text="${error}"></p>
-<form method="post" th:action="@{/vehicles/{id}/savings(id=${vehicle.id})}">
-  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-  <label>Annual distance (km) <input type="number" name="annualKm" min="0.01" max="200000" step="0.01" required></label><br>
-  <label>Gasoline consumption (L/100 km) <input type="number" name="gasolineLPer100km" min="0.01" max="30" step="0.01" required></label><br>
-  <label>Gasoline price ($/L) <input type="number" name="gasolinePricePerL" min="0.01" step="0.001" required></label><br>
-  <label>Electricity price ($/kWh) <input type="number" name="electricityPricePerKwh" min="0.01" step="0.001" required></label><br>
-  <button type="submit">Estimate savings</button>
-</form>
-<section th:if="${report != null}">
-  <h2>Annual estimate</h2>
-  <p th:text="|Gasoline cost: ${report.yearlyGasolineCost}|"></p>
-  <p th:text="|Electricity cost: ${report.yearlyChargingCost}|"></p>
-  <p th:text="|Yearly savings: ${report.yearlySavings}|"></p>
-  <p th:text="|Five-year savings: ${report.fiveYearSavings}|"></p>
-  <p th:text="|Gasoline CO2: ${report.co2GasolineKg} kg|"></p>
-  <p th:text="|EV CO2: ${report.co2ElectricKg} kg|"></p>
-  <p th:text="|CO2 avoided: ${report.co2AvoidedKg} kg|"></p>
-  <h3>Assumptions</h3>
-  <ul><li th:each="assumption : ${report.assumptions}" th:text="${assumption}"></li></ul>
-</section>
-</body>
-</html>
+<!DOCTYPE html> 
+<html lang="en" xmlns:th="http://www.thymeleaf.org"> 
+<head><meta charset="UTF-8"><title>Fuel savings estimator - Fritz EV</title></head> 
+<body> 
+<p><a th:href="@{/vehicles/{id}(id=${vehicle.id})}">Vehicle details</a></p> 
+<h1 th:text="|Fuel savings and CO2 estimator: ${vehicle.brand} ${vehicle.model}|">Savings estimator</h1> 
+<p th:if="${error}" th:text="${error}"></p> 
+<form method="post" th:action="@{/vehicles/{id}/savings(id=${vehicle.id})}"> 
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"> 
+  <label>Annual distance (km) <input type="number" name="annualKm" min="0.01" max="200000" step="0.01" required></label><br> 
+  <label>Gasoline consumption (L/100 km) <input type="number" name="gasolineLPer100km" min="0.01" max="30" step="0.01" required></label><br> 
+  <label>Gasoline price ($/L) <input type="number" name="gasolinePricePerL" min="0.01" step="0.001" required></label><br> 
+  <label>Electricity price ($/kWh) <input type="number" name="electricityPricePerKwh" min="0.01" step="0.001" required></label><br> 
+  <button type="submit">Estimate savings</button> 
+</form> 
+<section th:if="${report != null}"> 
+  <h2>Annual estimate</h2> 
+  <p th:text="|Gasoline cost: ${report.yearlyGasolineCost}|"></p> 
+  <p th:text="|Electricity cost: ${report.yearlyChargingCost}|"></p> 
+  <p th:text="|Yearly savings: ${report.yearlySavings}|"></p> 
+  <p th:text="|Five-year savings: ${report.fiveYearSavings}|"></p> 
+  <p th:text="|Gasoline CO2: ${report.co2GasolineKg} kg|"></p> 
+  <p th:text="|EV CO2: ${report.co2ElectricKg} kg|"></p> 
+  <p th:text="|CO2 avoided: ${report.co2AvoidedKg} kg|"></p> 
+  <h3>Assumptions</h3> 
+  <ul><li th:each="assumption : ${report.assumptions}" th:text="${assumption}"></li></ul> 
+</section> 
+</body> 
+</html> 

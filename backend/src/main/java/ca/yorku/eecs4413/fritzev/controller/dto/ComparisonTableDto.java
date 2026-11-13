@@ -1,6 +1,6 @@
-package ca.yorku.eecs4413.fritzev.controller.dto;
+package ca.yorku.eecs4413.fritzev.controller.dto; 
 
-import java.util.List;
+import java.util.List; 
 
-public record ComparisonTableDto(List<VehicleComparisonDto> vehicles) {
-}
+public record ComparisonTableDto(List<VehicleComparisonDto> vehicles) { 
+} 

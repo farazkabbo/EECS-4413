@@ -1,15 +1,15 @@
-# Local development: in-memory H2 that behaves like PostgreSQL.
-# H2 console: http://localhost:8080/h2-console  (JDBC URL below, user "sa", no password)
-spring:
-  datasource:
-    url: jdbc:h2:mem:fritzev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
-  sql:
-    init:
-      mode: always        # rebuild + reseed on every start
-  h2:
-    console:
-      enabled: true
-  jpa:
-    show-sql: false
+# Local development: in-memory H2 that behaves like PostgreSQL. 
+# H2 console: http://localhost:8080/h2-console  (JDBC URL below, user "sa", no password) 
+spring: 
+  datasource: 
+    url: jdbc:h2:mem:fritzev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1 
+    username: sa 
+    password: 
+  sql: 
+    init: 
+      mode: always        # rebuild + reseed on every start 
+  h2: 
+    console: 
+      enabled: true 
+  jpa: 
+    show-sql: false 

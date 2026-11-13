@@ -12,7 +12,7 @@ Team: Tamjeed, Zaaid, Mohammed, Ronak.
 
 ## Run it locally
 
-Prerequisites: **JDK 17+** and **Node 20+**. Maven doesn't need to be installed, because the wrapper is included.
+Prerequisites: **JDK 21+** and **Node 20+**. Maven doesn't need to be installed, because the wrapper is included.
 
 ```bash
 # 1. Back end  ->  http://localhost:8080

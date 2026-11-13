@@ -1,36 +1,36 @@
-<!DOCTYPE html>
-<!-- Deliverable 2 elementary page (no CSS): hot deals. Owner: Mohammed (PB-27). -->
-<html lang="en">
-<head><meta charset="UTF-8"><title>Fritz EV - Hot deals</title></head>
-<body>
-<p><a href="index.html">Home</a></p>
-<h1>Hot deals</h1>
-<table border="1" cellpadding="4">
-  <thead><tr><th>Vehicle</th><th>Condition</th><th>List price</th><th>Deal price</th><th>You save</th></tr></thead>
-  <tbody id="deals"><tr><td colspan="5">Loading...</td></tr></tbody>
-</table>
-<script>
-  const money = (n) => '$' + Number(n).toLocaleString('en-CA');
-  const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; };
-  fetch('/api/vehicles/hot-deals?limit=50')
-    .then((r) => r.ok ? r.json() : Promise.reject(r.status))
-    .then((deals) => {
-      const body = document.getElementById('deals');
-      body.innerHTML = '';
-      if (deals.length === 0) { body.innerHTML = '<tr><td colspan="5">No deals right now.</td></tr>'; return; }
-      for (const d of deals) {
-        // textContent (not innerHTML) so data from the server can never inject HTML (XSS).
-        const tr = document.createElement('tr');
-        const link = document.createElement('a');
-        link.href = '/api/vehicles/' + d.id;
-        link.textContent = `${d.modelYear} ${d.brand} ${d.model} ${d.trimName ?? ''}`;
-        const name = document.createElement('td'); name.appendChild(link); tr.appendChild(name);
-        tr.append(cell(d.condition), cell(money(d.price)), cell(money(d.dealPrice)),
-                  cell(`${money(d.savings)} (${d.discountPercent}%)`));
-        body.appendChild(tr);
-      }
-    })
-    .catch((e) => { document.getElementById('deals').innerHTML = '<tr><td colspan="5">Could not load deals.</td></tr>'; });
-</script>
-</body>
-</html>
+<!DOCTYPE html> 
+<!-- Deliverable 2 elementary page (no CSS): hot deals. Owner: Mohammed (PB-27). --> 
+<html lang="en"> 
+<head><meta charset="UTF-8"><title>Fritz EV - Hot deals</title></head> 
+<body> 
+<p><a href="index.html">Home</a></p> 
+<h1>Hot deals</h1> 
+<table border="1" cellpadding="4"> 
+  <thead><tr><th>Vehicle</th><th>Condition</th><th>List price</th><th>Deal price</th><th>You save</th></tr></thead> 
+  <tbody id="deals"><tr><td colspan="5">Loading...</td></tr></tbody> 
+</table> 
+<script> 
+  const money = (n) => '$' + Number(n).toLocaleString('en-CA'); 
+  const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; }; 
+  fetch('/api/vehicles/hot-deals?limit=50') 
+    .then((r) => r.ok ? r.json() : Promise.reject(r.status)) 
+    .then((deals) => { 
+      const body = document.getElementById('deals'); 
+      body.innerHTML = ''; 
+      if (deals.length === 0) { body.innerHTML = '<tr><td colspan="5">No deals right now.</td></tr>'; return; } 
+      for (const d of deals) { 
+        // textContent (not innerHTML) so data from the server can never inject HTML (XSS). 
+        const tr = document.createElement('tr'); 
+        const link = document.createElement('a'); 
+        link.href = '/api/vehicles/' + d.id; 
+        link.textContent = `${d.modelYear} ${d.brand} ${d.model} ${d.trimName ?? ''}`; 
+        const name = document.createElement('td'); name.appendChild(link); tr.appendChild(name); 
+        tr.append(cell(d.condition), cell(money(d.price)), cell(money(d.dealPrice)), 
+                  cell(`${money(d.savings)} (${d.discountPercent}%)`)); 
+        body.appendChild(tr); 
+      } 
+    }) 
+    .catch((e) => { document.getElementById('deals').innerHTML = '<tr><td colspan="5">Could not load deals.</td></tr>'; }); 
+</script> 
+</body> 
+</html> 
