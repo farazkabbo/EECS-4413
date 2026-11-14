@@ -133,4 +133,4 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private static String title(Vehicle v) { 
         return v.getModelYear() + " " + v.getBrand() + " " + v.getModel(); 
     } 
- 
+}
