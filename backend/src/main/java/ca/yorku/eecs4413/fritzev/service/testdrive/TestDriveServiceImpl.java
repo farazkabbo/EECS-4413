@@ -92,4 +92,4 @@ public class TestDriveServiceImpl implements TestDriveService {
         return new BookingDto(b.getId(), s.getId(), s.getVehicle().getId(), s.getDriveType(), 
                 s.getSlotStart(), b.getAddress(), b.getStatus()); 
     } 
- 
+}
