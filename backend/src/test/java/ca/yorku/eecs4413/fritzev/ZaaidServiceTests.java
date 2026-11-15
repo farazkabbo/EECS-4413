@@ -3,6 +3,7 @@ package ca.yorku.eecs4413.fritzev;
 import ca.yorku.eecs4413.fritzev.controller.dto.*; 
 import ca.yorku.eecs4413.fritzev.dao.*; 
 import ca.yorku.eecs4413.fritzev.domain.*; 
+import ca.yorku.eecs4413.fritzev.exception.ConflictException;
 import ca.yorku.eecs4413.fritzev.exception.ForbiddenException; 
 import ca.yorku.eecs4413.fritzev.integration.payment.MockPaymentGateway; 
 import ca.yorku.eecs4413.fritzev.service.account.AccountServiceImpl; 
@@ -35,6 +36,37 @@ class ZaaidServiceTests {
         assertEquals(99L, result.id()); assertEquals("newuser", result.username()); assertFalse(result.toString().contains("hashed")); 
         verify(encoder).encode("Password123!"); verify(addressDAO, times(2)).save(any(Address.class)); 
     } 
+
+    @Test
+    void registrationRejectsDuplicateUsernameBeforeSavingAnything() {
+        when(userDAO.existsByUsername("existinguser")).thenReturn(true);
+        var service = new AccountServiceImpl(userDAO, addressDAO, encoder);
+
+        assertThrows(ConflictException.class, () -> service.register(registrationRequest("existinguser", "new@example.com")));
+
+        verify(userDAO).existsByUsername("existinguser");
+        verify(userDAO, never()).save(any(User.class));
+        verifyNoInteractions(addressDAO, encoder);
+    }
+
+    @Test
+    void registrationRejectsDuplicateEmailBeforeSavingAnything() {
+        when(userDAO.existsByUsername("newuser")).thenReturn(false);
+        when(userDAO.existsByEmail("existing@example.com")).thenReturn(true);
+        var service = new AccountServiceImpl(userDAO, addressDAO, encoder);
+
+        assertThrows(ConflictException.class, () -> service.register(registrationRequest("newuser", "existing@example.com")));
+
+        verify(userDAO).existsByUsername("newuser");
+        verify(userDAO).existsByEmail("existing@example.com");
+        verify(userDAO, never()).save(any(User.class));
+        verifyNoInteractions(addressDAO, encoder);
+    }
+
+    private static RegisterRequest registrationRequest(String username, String email) {
+        var address = new AddressDto("1 Main St", "Toronto", "ON", "Canada", "M3J 1P3", "416-555-0101");
+        return new RegisterRequest(username, email, "Password123!", "New", "User", address, address);
+    }
 
     @Test 
     void invalidLoginUsesOneGenericError() { 
