@@ -33,6 +33,7 @@ class ZaaidIntegrationTests {
     @Autowired VehicleDAO vehicleDAO; 
     @Autowired OrderDAO orderDAO; 
     @Autowired ReviewDAO reviewDAO; 
+    @Autowired UserDAO userDAO;
 
     @BeforeEach 
     void isolateMutableSeedRows() { 
@@ -166,6 +167,37 @@ class ZaaidIntegrationTests {
                 .andExpect(status().isNoContent()); 
         mvc.perform(get("/api/auth/me").session(authenticated)).andExpect(status().isUnauthorized()); 
     } 
+
+    @Test
+    void duplicateRegistrationUsernameAndEmailReturnConflictWithoutCreatingUsers() throws Exception {
+        long usersBefore = userDAO.count();
+
+        mvc.perform(post("/api/auth/register")
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationBody("alice", "new@example.com")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value("Username or email is already registered"));
+
+        mvc.perform(post("/api/auth/register")
+                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationBody("newuser", "alice@example.com")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value("Username or email is already registered"));
+
+        assertEquals(usersBefore, userDAO.count());
+    }
+
+    private static String registrationBody(String username, String email) {
+        String address = "{\"street\":\"1 Main St\",\"city\":\"Toronto\",\"province\":\"ON\","
+                + "\"country\":\"Canada\",\"postalCode\":\"M3J 1P3\",\"phone\":\"416-555-0101\"}";
+        return "{\"username\":\"" + username + "\",\"email\":\"" + email
+                + "\",\"password\":\"Password123!\",\"firstName\":\"New\",\"lastName\":\"User\","
+                + "\"billing\":" + address + ",\"shipping\":" + address + "}";
+    }
 
     private MockHttpSession signedInSession(Long userId, String role) { 
         MockHttpSession session = new MockHttpSession(); 
